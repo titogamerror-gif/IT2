@@ -1,0 +1,1069 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tipificador de Memos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EEF1F4;
+  --surface:#FFFFFF;
+  --surface-2:#F5F7F9;
+  --ink:#1B2430;
+  --muted:#5B6B7A;
+  --line:#DCE2E7;
+  --accent:#0E7C61;
+  --accent-ink:#063D30;
+  --danger:#B23A48;
+  --hfc:#B4703A;
+  --gpon:#0F8B8D;
+  --dth:#5B4B8A;
+  --cobre:#8C6239;
+  --casos:#B23A48;
+  --gen:#516079;
+  --radius:10px;
+  --shadow:0 1px 2px rgba(27,36,48,.06), 0 4px 14px rgba(27,36,48,.06);
+  font-size:16px;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:'Manrope',-apple-system,'Segoe UI',sans-serif;
+  min-height:100vh;
+}
+.mono{font-family:'JetBrains Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;}
+
+/* ---- top bar ---- */
+.topbar{
+  position:sticky; top:0; z-index:40;
+  background:var(--ink); color:#fff;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 22px;
+  gap:16px;
+}
+.topbar .brand{display:flex; align-items:baseline; gap:10px;}
+.topbar .brand h1{font-size:1.15rem; font-weight:800; margin:0; letter-spacing:.2px;}
+.topbar .brand span{font-size:.8rem; color:#9BA9B8;}
+.rfield{display:flex; align-items:center; gap:8px;}
+.rfield label{font-size:.8rem; color:#9BA9B8; font-weight:600;}
+.rfield input{
+  background:#26313F; border:1px solid #3A4756; color:#fff;
+  border-radius:8px; padding:8px 10px; font-size:.95rem; width:150px;
+  font-family:'JetBrains Mono',monospace;
+}
+.rfield input:focus{outline:2px solid var(--accent); outline-offset:1px;}
+.rfield .hint{font-size:.72rem; color:#7C8998;}
+
+/* ---- category tabs ---- */
+.cattabs{
+  display:flex; gap:4px; padding:10px 22px 0 22px; background:var(--surface);
+  border-bottom:1px solid var(--line); overflow-x:auto;
+}
+.cattab{
+  padding:12px 16px; border:none; background:transparent; cursor:pointer;
+  font-family:inherit; font-weight:700; font-size:.92rem; color:var(--muted);
+  border-bottom:3px solid transparent; white-space:nowrap;
+  transition:color .15s;
+}
+.cattab:hover{color:var(--ink);}
+.cattab.active{color:var(--ink);}
+.cattab .dot{display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:8px; vertical-align:middle;}
+
+/* ---- layout ---- */
+.wrap{max-width:1180px; margin:0 auto; padding:20px 22px 60px;}
+.layout{display:grid; grid-template-columns:300px 1fr; gap:20px; align-items:start;}
+.layout.is-collapsed{grid-template-columns:auto 1fr;}
+@media (max-width:880px){ .layout{grid-template-columns:1fr;} }
+
+.hide-list-row{display:flex; justify-content:flex-end; margin-bottom:10px;}
+.hide-list-btn{
+  background:none; border:none; cursor:pointer; font-family:inherit;
+  font-size:.78rem; font-weight:700; color:var(--muted); padding:2px 4px;
+}
+.hide-list-btn:hover{color:var(--catcolor,var(--accent));}
+.show-list-btn{
+  width:38px; height:38px; border-radius:8px; border:1px solid var(--line); background:var(--surface);
+  cursor:pointer; font-size:1rem; box-shadow:var(--shadow); align-self:start;
+}
+.show-list-btn:hover{border-color:var(--catcolor,var(--accent));}
+
+.panel{background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow); padding:18px;}
+
+/* step pills */
+.steps{display:flex; gap:6px; margin-bottom:14px;}
+.step{
+  flex:1; text-align:center; padding:9px 8px; border-radius:8px; border:1px solid var(--line);
+  background:var(--surface-2); cursor:pointer; font-weight:700; font-size:.85rem; color:var(--muted);
+}
+.step.active{background:var(--catcolor,var(--accent)); color:#fff; border-color:transparent;}
+
+.suborders{display:flex; flex-direction:column; gap:6px;}
+.suborder-btn{
+  text-align:left; padding:10px 12px; border-radius:8px; border:1px solid var(--line);
+  background:var(--surface); cursor:pointer; font-family:inherit;
+}
+.suborder-btn:hover{border-color:var(--catcolor,var(--accent));}
+.suborder-btn.active{border-color:var(--catcolor,var(--accent)); background:color-mix(in srgb, var(--catcolor,var(--accent)) 8%, white);}
+.suborder-btn .lbl{display:block; font-weight:700; font-size:.9rem; color:var(--ink);}
+.suborder-btn .code{display:block; font-size:.76rem; color:var(--muted); margin-top:2px; font-family:'JetBrains Mono',monospace;}
+
+/* form */
+.formhead{display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;}
+.formhead h2{font-size:1.05rem; margin:0;}
+.formhead .code-chip{
+  font-family:'JetBrains Mono',monospace; font-size:.78rem; background:var(--surface-2);
+  border:1px solid var(--line); padding:3px 9px; border-radius:20px; color:var(--muted);
+}
+.form-empty{color:var(--muted); padding:40px 10px; text-align:center; font-size:.95rem;}
+
+.section-hdr{
+  margin:18px 0 8px; padding-top:10px; border-top:1px dashed var(--line);
+  font-size:.78rem; font-weight:800; letter-spacing:.03em; color:var(--catcolor,var(--accent));
+}
+.section-hdr:first-child{border-top:none; margin-top:0; padding-top:0;}
+
+.field{margin-bottom:12px;}
+.field label{display:block; font-size:.82rem; font-weight:600; color:var(--muted); margin-bottom:5px;}
+.field input[type=text], .field textarea, .field select{
+  width:100%; padding:9px 11px; border:1px solid var(--line); border-radius:8px;
+  font-family:inherit; font-size:.92rem; background:#fff; color:var(--ink);
+}
+.field textarea{min-height:70px; resize:vertical; font-family:'JetBrains Mono',monospace; font-size:.85rem;}
+.field input:focus, .field textarea:focus, .field select:focus{
+  outline:none; border-color:var(--catcolor,var(--accent)); box-shadow:0 0 0 3px color-mix(in srgb, var(--catcolor,var(--accent)) 18%, transparent);
+}
+
+.tvblock{border:1px solid var(--line); border-radius:8px; padding:12px; margin-bottom:14px; background:var(--surface-2);}
+.tvblock .tvhead{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;}
+.tvblock .tvhead strong{font-size:.85rem;}
+.countpicker{display:flex; gap:5px;}
+.countpicker button{
+  width:30px; height:30px; border-radius:6px; border:1px solid var(--line); background:#fff;
+  cursor:pointer; font-weight:700; font-family:inherit; font-size:.85rem;
+}
+.countpicker button.active{background:var(--catcolor,var(--accent)); color:#fff; border-color:transparent;}
+
+.opt-list{display:flex; gap:6px; flex-wrap:wrap;}
+.opt-btn{
+  padding:8px 16px; border-radius:20px; border:1px solid var(--line); background:#fff;
+  cursor:pointer; font-weight:700; font-family:inherit; font-size:.85rem; color:var(--muted);
+}
+.opt-btn:hover{border-color:var(--catcolor,var(--accent));}
+.opt-btn.active{background:var(--catcolor,var(--accent)); color:#fff; border-color:transparent;}
+.tv-inputs{display:grid; gap:8px;}
+
+.actions{display:flex; gap:10px; margin-top:18px;}
+.btn{
+  padding:11px 18px; border-radius:8px; border:none; cursor:pointer; font-weight:700;
+  font-family:inherit; font-size:.92rem;
+}
+.btn-primary{background:var(--catcolor,var(--accent)); color:#fff;}
+.btn-primary:hover{filter:brightness(1.06);}
+.btn-secondary{background:var(--surface-2); color:var(--ink); border:1px solid var(--line);}
+.validation{color:var(--danger); font-size:.82rem; margin-top:8px; font-weight:600;}
+
+.output-wrap{margin-top:18px; border-top:1px solid var(--line); padding-top:16px;}
+.output-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;}
+.output-head h3{font-size:.9rem; margin:0; color:var(--muted);}
+.output{
+  background:#0F1720; color:#D9E4EC; border-radius:8px; padding:16px;
+  white-space:pre-wrap; font-size:.86rem; line-height:1.55; min-height:360px; height:48vh; max-height:760px; overflow:auto;
+}
+.copied-toast{font-size:.8rem; color:var(--accent); font-weight:700; opacity:0; transition:opacity .2s;}
+.copied-toast.show{opacity:1;}
+
+.casos-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:10px;}
+.caso-card{
+  border:1px solid var(--line); border-radius:8px; padding:14px; cursor:pointer; background:#fff;
+}
+.caso-card:hover{border-color:var(--casos);}
+.caso-card.active{border-color:var(--casos); background:color-mix(in srgb, var(--casos) 8%, white);}
+.caso-card .lbl{font-weight:700; font-size:.92rem;}
+
+.footnote{font-size:.78rem; color:var(--muted); margin-top:22px; text-align:center;}
+.wallpaper-tools{display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+.wallpaper-tools .btn{padding:8px 10px;font-size:.78rem;white-space:nowrap;}
+.wallpaper-tools input[type=file]{display:none;}
+body.has-wallpaper{background-size:cover;background-position:center;background-attachment:fixed;background-repeat:no-repeat;}
+@media(max-width:760px){.topbar{align-items:flex-start;flex-wrap:wrap;padding:12px}.topbar .brand{flex-wrap:wrap}.wallpaper-tools{width:100%;}}
+
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="brand"><h1>Tipificador de Memos</h1><span>HFC · GPON · DTH · COBRE · Casos</span></div>
+  <div class="rfield">
+    <label for="rInput">DESPACHO / R</label>
+    <input id="rInput" type="text" placeholder="ej. R1196" autocomplete="off">
+  </div>
+  <div class="rfield" id="codigoField" style="display:none;">
+    <label for="codigoInput">CÓDIGO DE PRUEBA (9 dígitos)</label>
+    <input id="codigoInput" type="text" inputmode="numeric" maxlength="9" placeholder="123456789" autocomplete="off">
+  </div>
+  <div class="wallpaper-tools">
+    <button class="btn btn-secondary" type="button" id="wallpaperBtn">🖼️ Fondo de pantalla</button>
+    <input type="file" id="wallpaperFile" accept="image/*">
+    <button class="btn btn-secondary" type="button" id="removeWallpaperBtn" title="Quitar fondo">Quitar fondo</button>
+  </div>
+</div>
+
+<div class="cattabs" id="cattabs"></div>
+
+<div class="wrap" id="wrap"></div>
+
+<script>
+const TPL_DATA = {"TECH":{"HFC":{"ACTIVACION":[{"col":"B","label":"AQ HIBRIDA /MX","code":"AQ - MX","rows":[{"kind":"blank"},{"kind":"field","id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"id_llamada","label":"ID LLAMADA","input":"text","placeholder":"","prefix":"ID LLAMADA: "},{"kind":"field","id":"red","label":"RED","input":"text","placeholder":"(13+F9+F1+2 ENTER)","prefix":"RED: "},{"kind":"field","id":"correo","label":"CORREO","input":"text","placeholder":"","prefix":"CORREO: "},{"kind":"field","id":"macaddres","label":"MACADDRES","input":"text","placeholder":"","prefix":"MACADDRES: "},{"kind":"field","id":"mta","label":"MTA","input":"text","placeholder":"","prefix":"MTA: "},{"kind":"field","id":"portadoras","label":"PORTADORAS","input":"text","placeholder":"","prefix":"PORTADORAS: "},{"kind":"tvgroup","groupId":"tv_ott_1","label":"OTT","prefix":"OTT: ","max":8},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":""},{"id":"id_llamada","label":"ID LLAMADA","input":"text","placeholder":""},{"id":"red","label":"RED","input":"text","placeholder":"(13+F9+F1+2 ENTER)"},{"id":"correo","label":"CORREO","input":"text","placeholder":""},{"id":"macaddres","label":"MACADDRES","input":"text","placeholder":""},{"id":"mta","label":"MTA","input":"text","placeholder":""},{"id":"portadoras","label":"PORTADORAS","input":"text","placeholder":""}]},{"col":"C","label":"SERVICIO TRIPLE AQ PURA O MX","code":"AQ-MX","rows":[{"kind":"blank"},{"kind":"field","id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"id_llamada","label":"ID LLAMADA","input":"text","placeholder":"","prefix":"ID LLAMADA: "},{"kind":"field","id":"macaddress","label":"MACADDRESS","input":"text","placeholder":"","prefix":"MACADDRESS: "},{"kind":"field","id":"mta","label":"MTA","input":"text","placeholder":"","prefix":"MTA: "},{"kind":"field","id":"portadoras","label":"PORTADORAS","input":"text","placeholder":"","prefix":"PORTADORAS: "},{"kind":"tvgroup","groupId":"tv_stb_ua_1","label":"STB/UA","prefix":"STB/UA: ","max":6},{"kind":"field","id":"video_hub","label":"VIDEO HUB","input":"text","placeholder":"","prefix":"VIDEO HUB: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":""},{"id":"id_llamada","label":"ID LLAMADA","input":"text","placeholder":""},{"id":"macaddress","label":"MACADDRESS","input":"text","placeholder":""},{"id":"mta","label":"MTA","input":"text","placeholder":""},{"id":"portadoras","label":"PORTADORAS","input":"text","placeholder":""},{"id":"video_hub","label":"VIDEO HUB","input":"text","placeholder":""}]},{"col":"D","label":"SERVICIO DOBLE  CABLE MODEM","code":"AQ-MC-MX","rows":[{"kind":"blank"},{"kind":"field","id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"id_llamada","label":"ID LLAMADA","input":"text","placeholder":"","prefix":"ID LLAMADA: "},{"kind":"field","id":"red","label":"RED","input":"text","placeholder":"(13+F9+F1+2 ENTER)","prefix":"RED: "},{"kind":"field","id":"macaddres","label":"MACADDRES","input":"text","placeholder":"","prefix":"MACADDRES: "},{"kind":"field","id":"mta","label":"MTA","input":"text","placeholder":"","prefix":"MTA: "},{"kind":"field","id":"portadoras","label":"PORTADORAS","input":"text","placeholder":"","prefix":"PORTADORAS: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":""},{"id":"id_llamada","label":"ID LLAMADA","input":"text","placeholder":""},{"id":"red","label":"RED","input":"text","placeholder":"(13+F9+F1+2 ENTER)"},{"id":"macaddres","label":"MACADDRES","input":"text","placeholder":""},{"id":"mta","label":"MTA","input":"text","placeholder":""},{"id":"portadoras","label":"PORTADORAS","input":"text","placeholder":""}]},{"col":"E","label":"SOLO TV","code":"EA-MA","rows":[{"kind":"blank"},{"kind":"field","id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"id_llamada","label":"ID LLAMADA","input":"text","placeholder":"","prefix":"ID LLAMADA: "},{"kind":"tvgroup","groupId":"tv_stb_ua_1","label":"STB/UA","prefix":"STB/UA: ","max":6},{"kind":"field","id":"video_hub","label":"VIDEO HUB","input":"text","placeholder":"","prefix":"VIDEO HUB: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":""},{"id":"id_llamada","label":"ID LLAMADA","input":"text","placeholder":""},{"id":"video_hub","label":"VIDEO HUB","input":"text","placeholder":""}]},{"col":"F","label":"SOLO TV CAMBIO EQUIPO","code":"HD -CS","rows":[{"kind":"blank"},{"kind":"field","id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"id_llamada","label":"ID LLAMADA","input":"text","placeholder":"","prefix":"ID LLAMADA: "},{"kind":"field","id":"equipo_a_retirar","label":"EQUIPO A RETIRAR","input":"text","placeholder":"","prefix":"EQUIPO A RETIRAR: "},{"kind":"blank"},{"kind":"field","id":"equipo_a_instalar","label":"EQUIPO A INSTALAR","input":"text","placeholder":"","prefix":"EQUIPO A INSTALAR: "},{"kind":"tvgroup","groupId":"tv_stb_ua_1","label":"STB/UA","prefix":"STB/UA: ","max":6},{"kind":"field","id":"video_hub","label":"VIDEO HUB","input":"text","placeholder":"","prefix":"VIDEO HUB: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":""},{"id":"id_llamada","label":"ID LLAMADA","input":"text","placeholder":""},{"id":"equipo_a_retirar","label":"EQUIPO A RETIRAR","input":"text","placeholder":""},{"id":"equipo_a_instalar","label":"EQUIPO A INSTALAR","input":"text","placeholder":""},{"id":"video_hub","label":"VIDEO HUB","input":"text","placeholder":""}]},{"col":"G","label":"CAMBIO DE EQUIPO CABLE MODEM","code":"CH - CW","rows":[{"kind":"blank"},{"kind":"field","id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"id_llamada","label":"ID LLAMADA","input":"text","placeholder":"","prefix":"ID LLAMADA: "},{"kind":"static","text":"***SERIES A RETIRAR***"},{"kind":"field","id":"macaddres","label":"MACADDRES (series a retirar)","input":"text","placeholder":"","prefix":"MACADDRES: "},{"kind":"field","id":"mta","label":"MTA (series a retirar)","input":"text","placeholder":"","prefix":"MTA: "},{"kind":"static","text":"***SERIES A ACTIVAR***"},{"kind":"field","id":"macaddres_2","label":"MACADDRES (series a activar)","input":"text","placeholder":"","prefix":"MACADDRES: "},{"kind":"field","id":"mta_2","label":"MTA (series a activar)","input":"text","placeholder":"","prefix":"MTA: "},{"kind":"field","id":"portadoras","label":"PORTADORAS","input":"text","placeholder":"","prefix":"PORTADORAS: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":""},{"id":"id_llamada","label":"ID LLAMADA","input":"text","placeholder":""},{"id":"macaddres","label":"MACADDRES (series a retirar)","input":"text","placeholder":""},{"id":"mta","label":"MTA (series a retirar)","input":"text","placeholder":""},{"id":"macaddres_2","label":"MACADDRES (series a activar)","input":"text","placeholder":""},{"id":"mta_2","label":"MTA (series a activar)","input":"text","placeholder":""},{"id":"portadoras","label":"PORTADORAS","input":"text","placeholder":""}]},{"col":"H","label":"ORDEN DQ HFC","code":"CABLEMODEM","rows":[{"kind":"blank"},{"kind":"field","id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"id_llamada","label":"ID LLAMADA","input":"text","placeholder":"","prefix":"ID LLAMADA: "},{"kind":"field","id":"portadoras","label":"PORTADORAS","input":"text","placeholder":"","prefix":"PORTADORAS: "},{"kind":"field","id":"niveles","label":"NIVELES","input":"textarea","prefix":"NIVELES: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":""},{"id":"id_llamada","label":"ID LLAMADA","input":"text","placeholder":""},{"id":"portadoras","label":"PORTADORAS","input":"text","placeholder":""},{"id":"niveles","label":"NIVELES","input":"textarea"}]},{"col":"I","label":"NIVELES","code":"CABLEMODEM","rows":[{"kind":"blank"},{"kind":"field","id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"id_llamada","label":"ID LLAMADA","input":"text","placeholder":"","prefix":"ID LLAMADA: "},{"kind":"field","id":"portadoras","label":"PORTADORAS","input":"text","placeholder":"","prefix":"PORTADORAS: "},{"kind":"field","id":"niveles","label":"NIVELES","input":"textarea","prefix":"NIVELES: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":""},{"id":"id_llamada","label":"ID LLAMADA","input":"text","placeholder":""},{"id":"portadoras","label":"PORTADORAS","input":"text","placeholder":""},{"id":"niveles","label":"NIVELES","input":"textarea"}]}],"CONFIRMACION":[{"col":"B","label":"AQ HIBRIDA /MX","code":"AQ","rows":[{"kind":"field","id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"id_llamada_tecnico","label":"ID LLAMADA (con técnico)","input":"text","prefix":"ID LLAMADA TECNICO: "},{"kind":"field","id":"red","label":"RED","input":"text","placeholder":"","prefix":"RED: "},{"kind":"field","id":"mano_de_obra","label":"MANO DE OBRA","input":"textarea","prefix":"MANO DE OBRA: "},{"kind":"field","id":"niveles","label":"NIVELES","input":"textarea","prefix":"NIVELES: "},{"kind":"field","id":"nombre_de_quien_confirma","label":"NOMBRE DE QUIEN CONFIRMA","input":"text","placeholder":"","prefix":"NOMBRE DE QUIEN CONFIRMA: "},{"kind":"field","id":"numero_al_que_confirma","label":"NUMERO AL QUE CONFIRMA","input":"text","placeholder":"","prefix":"NUMERO AL QUE CONFIRMA: "},{"kind":"templated","raw":"CABLEADO: @@FIELD:cableado@@","fieldIds":["cableado"]},{"kind":"field","id":"tvs_insta","label":"TVS INSTA","input":"text","placeholder":"","prefix":"TVS INSTA: "},{"kind":"field","id":"validado_en_gui","label":"VALIDADO EN GUI","input":"text","placeholder":"","prefix":"VALIDADO EN GUI: "},{"kind":"field","id":"validado_en_skyway","label":"VALIDADO EN SKYWAY","input":"text","placeholder":"","prefix":"VALIDADO EN SKYWAY: "},{"kind":"codigo_hora","id":"codigo_de_prueba","label":"CODIGO DE PRUEBA","prefix":"CODIGO DE PRUEBA: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"},{"kind":"blank"},{"kind":"blank"},{"kind":"static","text":"**CONFIRMACION CON CLIENTE**"},{"kind":"static","text":"*_*"},{"kind":"echo","refId":"id_tecnico","prefix":"ID TECNICO: "},{"kind":"echo","refId":"id_llamada_tecnico","prefix":"ID LLAMADA TECNICO: "},{"kind":"field","id":"id_llamada_cliente","label":"ID LLAMADA (con cliente)","input":"text","prefix":"ID LLAMADA CLIENTE: "},{"kind":"field","id":"id_cliente","label":"ID CLIENTE","input":"textarea","prefix":"ID CLIENTE: "},{"kind":"templated","raw":"¿Todos los equipos quedaron instalados y funcionando correctamente? @@FIELD:q1_todos_los_equipos_quedaron_i@@","fieldIds":["q1_todos_los_equipos_quedaron_i"]},{"kind":"templated","raw":"¿Está de acuerdo con el cableado realizado en la instalación de sus servicios? @@FIELD:q2_est_de_acuerdo_con_el_cablea@@","fieldIds":["q2_est_de_acuerdo_con_el_cablea"]},{"kind":"templated","raw":"¿La línea telefónica funciona correctamente? @@FIELD:q3_la_l_nea_telef_nica_funciona@@","fieldIds":["q3_la_l_nea_telef_nica_funciona"]},{"kind":"templated","raw":"¿Técnico le entregó aparato telefónico? (Si aplica) @@FIELD:q4_t_cnico_le_entreg_aparato_te@@","fieldIds":["q4_t_cnico_le_entreg_aparato_te"]},{"kind":"templated","raw":"¿Se realizaron pruebas en el servicio de internet y funciona correctamente? @@FIELD:q5_se_realizaron_pruebas_en_el_@@","fieldIds":["q5_se_realizaron_pruebas_en_el_"]},{"kind":"templated","raw":"¿El técnico hizo la certificación de señal wifi en su domicilio? @@FIELD:q6_el_t_cnico_hizo_la_certifica@@","fieldIds":["q6_el_t_cnico_hizo_la_certifica"]},{"kind":"templated","raw":"¿Todos los televisores quedaron conectados, cableados y en funcionamiento? @@FIELD:q7_todos_los_televisores_quedar@@","fieldIds":["q7_todos_los_televisores_quedar"]},{"kind":"templated","raw":"¿Le realizaron la entrega del control remoto para cada uno de los televisores? @@FIELD:q8_le_realizaron_la_entrega_del@@","fieldIds":["q8_le_realizaron_la_entrega_del"]},{"kind":"templated","raw":"¿Está de acuerdo con el servicio recibido y autoriza el cierre de la orden? @@FIELD:q9_est_de_acuerdo_con_el_servic@@","fieldIds":["q9_est_de_acuerdo_con_el_servic"]},{"kind":"codigo_hora","id":"codigo_de_prueba_2","label":"CODIGO DE PRUEBA (confirmacion con cliente)","prefix":"CODIGO DE PRUEBA: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"q1_todos_los_equipos_quedaron_i","label":"Todos los equipos quedaron instalados y funcionando correctamente","input":"select","options":["SI","NO"]},{"id":"q2_est_de_acuerdo_con_el_cablea","label":"Está de acuerdo con el cableado realizado en la instalación de sus servicios","input":"select","options":["SI","NO"]},{"id":"q3_la_l_nea_telef_nica_funciona","label":"La línea telefónica funciona correctamente","input":"select","options":["SI","NO"]},{"id":"q4_t_cnico_le_entreg_aparato_te","label":"Técnico le entregó aparato telefónico (Si aplica)","input":"select","options":["SI","NO"]},{"id":"q5_se_realizaron_pruebas_en_el_","label":"Se realizaron pruebas en el servicio de internet y funciona correctamente","input":"select","options":["SI","NO"]},{"id":"q6_el_t_cnico_hizo_la_certifica","label":"El técnico hizo la certificación de señal wifi en su domicilio","input":"select","options":["SI","NO"]},{"id":"q7_todos_los_televisores_quedar","label":"Todos los televisores quedaron conectados, cableados y en funcionamiento","input":"select","options":["SI","NO"]},{"id":"q8_le_realizaron_la_entrega_del","label":"Le realizaron la entrega del control remoto para cada uno de los televisores","input":"select","options":["SI","NO"]},{"id":"q9_est_de_acuerdo_con_el_servic","label":"Está de acuerdo con el servicio recibido y autoriza el cierre de la orden","input":"select","options":["SI","NO"]},{"id":"cableado","label":"Cableado","input":"multiselect","options":["GRAPAS","DUCTOS","PEGADO","AEREO"]},{"id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":""},{"id":"red","label":"RED","input":"text","placeholder":""},{"id":"mano_de_obra","label":"MANO DE OBRA","input":"textarea"},{"id":"niveles","label":"NIVELES","input":"textarea"},{"id":"nombre_de_quien_confirma","label":"NOMBRE DE QUIEN CONFIRMA","input":"text","placeholder":""},{"id":"numero_al_que_confirma","label":"NUMERO AL QUE CONFIRMA","input":"text","placeholder":""},{"id":"tvs_insta","label":"TVS INSTA","input":"text","placeholder":""},{"id":"validado_en_gui","label":"VALIDADO EN GUI","input":"text","placeholder":""},{"id":"validado_en_skyway","label":"VALIDADO EN SKYWAY","input":"text","placeholder":""},{"id":"id_cliente","label":"ID CLIENTE","input":"textarea"},{"id":"id_llamada_tecnico","label":"ID LLAMADA (con técnico)","input":"text"},{"id":"id_llamada_cliente","label":"ID LLAMADA (con cliente)","input":"text"}]},{"col":"C","label":"SERVICIO TRIPLE AQ PURA O MX","code":"AQ - MX","rows":[{"kind":"field","id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"id_llamada_tecnico","label":"ID LLAMADA (con técnico)","input":"text","prefix":"ID LLAMADA TECNICO: "},{"kind":"field","id":"red","label":"RED","input":"text","placeholder":"","prefix":"RED: "},{"kind":"field","id":"mano_de_obra","label":"MANO DE OBRA","input":"textarea","prefix":"MANO DE OBRA: "},{"kind":"field","id":"niveles","label":"NIVELES","input":"textarea","prefix":"NIVELES: "},{"kind":"field","id":"nombre_de_quien_confirma","label":"NOMBRE DE QUIEN CONFIRMA","input":"text","placeholder":"","prefix":"NOMBRE DE QUIEN CONFIRMA: "},{"kind":"field","id":"numero_al_que_confirma","label":"NUMERO AL QUE CONFIRMA","input":"text","placeholder":"","prefix":"NUMERO AL QUE CONFIRMA: "},{"kind":"templated","raw":"CABLEADO: @@FIELD:cableado@@","fieldIds":["cableado"]},{"kind":"field","id":"tvs_insta","label":"TVS INSTA","input":"text","placeholder":"","prefix":"TVS INSTA: "},{"kind":"codigo_hora","id":"codigo_de_prueba","label":"CODIGO DE PRUEBA","prefix":"CODIGO DE PRUEBA: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"},{"kind":"blank"},{"kind":"blank"},{"kind":"static","text":"**CONFIRMACION CON CLIENTE**"},{"kind":"static","text":"*_*"},{"kind":"echo","refId":"id_tecnico","prefix":"ID TECNICO: "},{"kind":"echo","refId":"id_llamada_tecnico","prefix":"ID LLAMADA TECNICO: "},{"kind":"field","id":"id_llamada_cliente","label":"ID LLAMADA (con cliente)","input":"text","prefix":"ID LLAMADA CLIENTE: "},{"kind":"field","id":"id_cliente","label":"ID CLIENTE","input":"textarea","prefix":"ID CLIENTE: "},{"kind":"templated","raw":"¿Todos los equipos quedaron instalados y funcionando correctamente? @@FIELD:q10_todos_los_equipos_quedaron_i@@","fieldIds":["q10_todos_los_equipos_quedaron_i"]},{"kind":"templated","raw":"¿Está de acuerdo con el cableado realizado en la instalación de sus servicios? @@FIELD:q11_est_de_acuerdo_con_el_cablea@@","fieldIds":["q11_est_de_acuerdo_con_el_cablea"]},{"kind":"templated","raw":"¿La línea telefónica funciona correctamente? @@FIELD:q12_la_l_nea_telef_nica_funciona@@","fieldIds":["q12_la_l_nea_telef_nica_funciona"]},{"kind":"templated","raw":"¿Técnico le entregó aparato telefónico? (Si aplica) @@FIELD:q13_t_cnico_le_entreg_aparato_te@@","fieldIds":["q13_t_cnico_le_entreg_aparato_te"]},{"kind":"templated","raw":"¿Se realizaron pruebas en el servicio de internet y funciona correctamente? @@FIELD:q14_se_realizaron_pruebas_en_el_@@","fieldIds":["q14_se_realizaron_pruebas_en_el_"]},{"kind":"templated","raw":"¿El técnico hizo la certificación de señal wifi en su domicilio? @@FIELD:q15_el_t_cnico_hizo_la_certifica@@","fieldIds":["q15_el_t_cnico_hizo_la_certifica"]},{"kind":"templated","raw":"¿Todos los televisores quedaron conectados, cableados y en funcionamiento? @@FIELD:q16_todos_los_televisores_quedar@@","fieldIds":["q16_todos_los_televisores_quedar"]},{"kind":"templated","raw":"¿Le realizaron la entrega del control remoto para cada uno de los televisores? @@FIELD:q17_le_realizaron_la_entrega_del@@","fieldIds":["q17_le_realizaron_la_entrega_del"]},{"kind":"templated","raw":"¿Está de acuerdo con el servicio recibido y autoriza el cierre de la orden? @@FIELD:q18_est_de_acuerdo_con_el_servic@@","fieldIds":["q18_est_de_acuerdo_con_el_servic"]},{"kind":"codigo_hora","id":"codigo_de_prueba_2","label":"CODIGO DE PRUEBA (confirmacion con cliente)","prefix":"CODIGO DE PRUEBA: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"q10_todos_los_equipos_quedaron_i","label":"Todos los equipos quedaron instalados y funcionando correctamente","input":"select","options":["SI","NO"]},{"id":"q11_est_de_acuerdo_con_el_cablea","label":"Está de acuerdo con el cableado realizado en la instalación de sus servicios","input":"select","options":["SI","NO"]},{"id":"q12_la_l_nea_telef_nica_funciona","label":"La línea telefónica funciona correctamente","input":"select","options":["SI","NO"]},{"id":"q13_t_cnico_le_entreg_aparato_te","label":"Técnico le entregó aparato telefónico (Si aplica)","input":"select","options":["SI","NO"]},{"id":"q14_se_realizaron_pruebas_en_el_","label":"Se realizaron pruebas en el servicio de internet y funciona correctamente","input":"select","options":["SI","NO"]},{"id":"q15_el_t_cnico_hizo_la_certifica","label":"El técnico hizo la certificación de señal wifi en su domicilio","input":"select","options":["SI","NO"]},{"id":"q16_todos_los_televisores_quedar","label":"Todos los televisores quedaron conectados, cableados y en funcionamiento","input":"select","options":["SI","NO"]},{"id":"q17_le_realizaron_la_entrega_del","label":"Le realizaron la entrega del control remoto para cada uno de los televisores","input":"select","options":["SI","NO"]},{"id":"q18_est_de_acuerdo_con_el_servic","label":"Está de acuerdo con el servicio recibido y autoriza el cierre de la orden","input":"select","options":["SI","NO"]},{"id":"cableado","label":"Cableado","input":"multiselect","options":["GRAPAS","DUCTOS","PEGADO","AEREO"]},{"id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":""},{"id":"red","label":"RED","input":"text","placeholder":""},{"id":"mano_de_obra","label":"MANO DE OBRA","input":"textarea"},{"id":"niveles","label":"NIVELES","input":"textarea"},{"id":"nombre_de_quien_confirma","label":"NOMBRE DE QUIEN CONFIRMA","input":"text","placeholder":""},{"id":"numero_al_que_confirma","label":"NUMERO AL QUE CONFIRMA","input":"text","placeholder":""},{"id":"tvs_insta","label":"TVS INSTA","input":"text","placeholder":""},{"id":"id_cliente","label":"ID CLIENTE","input":"textarea"},{"id":"id_llamada_tecnico","label":"ID LLAMADA (con técnico)","input":"text"},{"id":"id_llamada_cliente","label":"ID LLAMADA (con cliente)","input":"text"}]},{"col":"D","label":"SERVICIO TRIPLE    MX","code":"MX MIGRACIONES","rows":[{"kind":"field","id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"id_llamada_tecnico","label":"ID LLAMADA (con técnico)","input":"text","prefix":"ID LLAMADA TECNICO: "},{"kind":"field","id":"red","label":"RED","input":"text","placeholder":"","prefix":"RED: "},{"kind":"field","id":"mano_de_obra","label":"MANO DE OBRA","input":"textarea","prefix":"MANO DE OBRA: "},{"kind":"field","id":"niveles","label":"NIVELES","input":"textarea","prefix":"NIVELES: "},{"kind":"field","id":"nombre_de_quien_confirma","label":"NOMBRE DE QUIEN CONFIRMA","input":"text","placeholder":"","prefix":"NOMBRE DE QUIEN CONFIRMA: "},{"kind":"field","id":"numero_al_que_confirma","label":"NUMERO AL QUE CONFIRMA","input":"text","placeholder":"","prefix":"NUMERO AL QUE CONFIRMA: "},{"kind":"templated","raw":"CABLEADO: @@FIELD:cableado@@","fieldIds":["cableado"]},{"kind":"field","id":"tvs_insta","label":"TVS INSTA","input":"text","placeholder":"","prefix":"TVS INSTA: "},{"kind":"codigo_hora","id":"codigo_de_prueba","label":"CODIGO DE PRUEBA","prefix":"CODIGO DE PRUEBA: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"},{"kind":"blank"},{"kind":"blank"},{"kind":"static","text":"**CONFIRMACION CON CLIENTE**"},{"kind":"static","text":"*_*"},{"kind":"echo","refId":"id_tecnico","prefix":"ID TECNICO: "},{"kind":"echo","refId":"id_llamada_tecnico","prefix":"ID LLAMADA TECNICO: "},{"kind":"field","id":"id_llamada_cliente","label":"ID LLAMADA (con cliente)","input":"text","prefix":"ID LLAMADA CLIENTE: "},{"kind":"field","id":"id_cliente","label":"ID CLIENTE","input":"textarea","prefix":"ID CLIENTE: "},{"kind":"templated","raw":"¿Todos los equipos quedaron instalados y funcionando correctamente? @@FIELD:q19_todos_los_equipos_quedaron_i@@","fieldIds":["q19_todos_los_equipos_quedaron_i"]},{"kind":"templated","raw":"¿Está de acuerdo con el cableado realizado en la instalación de sus servicios? @@FIELD:q20_est_de_acuerdo_con_el_cablea@@","fieldIds":["q20_est_de_acuerdo_con_el_cablea"]},{"kind":"templated","raw":"¿La línea telefónica funciona correctamente? @@FIELD:q21_la_l_nea_telef_nica_funciona@@","fieldIds":["q21_la_l_nea_telef_nica_funciona"]},{"kind":"templated","raw":"¿Técnico le entregó aparato telefónico? (Si aplica) @@FIELD:q22_t_cnico_le_entreg_aparato_te@@","fieldIds":["q22_t_cnico_le_entreg_aparato_te"]},{"kind":"templated","raw":"¿Se realizaron pruebas en el servicio de internet y funciona correctamente? @@FIELD:q23_se_realizaron_pruebas_en_el_@@","fieldIds":["q23_se_realizaron_pruebas_en_el_"]},{"kind":"templated","raw":"¿El técnico hizo la certificación de señal wifi en su domicilio? @@FIELD:q24_el_t_cnico_hizo_la_certifica@@","fieldIds":["q24_el_t_cnico_hizo_la_certifica"]},{"kind":"templated","raw":"¿Todos los televisores quedaron conectados, cableados y en funcionamiento? @@FIELD:q25_todos_los_televisores_quedar@@","fieldIds":["q25_todos_los_televisores_quedar"]},{"kind":"templated","raw":"¿Le realizaron la entrega del control remoto para cada uno de los televisores? @@FIELD:q26_le_realizaron_la_entrega_del@@","fieldIds":["q26_le_realizaron_la_entrega_del"]},{"kind":"templated","raw":"¿Está de acuerdo con el servicio recibido y autoriza el cierre de la orden? @@FIELD:q27_est_de_acuerdo_con_el_servic@@","fieldIds":["q27_est_de_acuerdo_con_el_servic"]},{"kind":"codigo_hora","id":"codigo_de_prueba_2","label":"CODIGO DE PRUEBA (confirmacion con cliente)","prefix":"CODIGO DE PRUEBA: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"},{"kind":"static","text":"----------------------------------------------------------"},{"kind":"field","id":"retiro_de_equipos","label":"RETIRO DE EQUIPOS","input":"text","placeholder":"","prefix":"RETIRO DE EQUIPOS: "},{"kind":"field","id":"cantidad_equipos","label":"CANTIDAD EQUIPOS","input":"text","placeholder":"","prefix":"CANTIDAD EQUIPOS: "},{"kind":"field","id":"retiro_de_cableado_interno_c","label":"RETIRO DE CABLEADO INTERNO COMPLETO","input":"text","placeholder":"","prefix":"RETIRO DE CABLEADO INTERNO COMPLETO: "},{"kind":"codigo_hora","id":"codigo_de_prueba_3","label":"CODIGO DE PRUEBA (confirmacion con cliente)","prefix":"CODIGO DE PRUEBA: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"q19_todos_los_equipos_quedaron_i","label":"Todos los equipos quedaron instalados y funcionando correctamente","input":"select","options":["SI","NO"]},{"id":"q20_est_de_acuerdo_con_el_cablea","label":"Está de acuerdo con el cableado realizado en la instalación de sus servicios","input":"select","options":["SI","NO"]},{"id":"q21_la_l_nea_telef_nica_funciona","label":"La línea telefónica funciona correctamente","input":"select","options":["SI","NO"]},{"id":"q22_t_cnico_le_entreg_aparato_te","label":"Técnico le entregó aparato telefónico (Si aplica)","input":"select","options":["SI","NO"]},{"id":"q23_se_realizaron_pruebas_en_el_","label":"Se realizaron pruebas en el servicio de internet y funciona correctamente","input":"select","options":["SI","NO"]},{"id":"q24_el_t_cnico_hizo_la_certifica","label":"El técnico hizo la certificación de señal wifi en su domicilio","input":"select","options":["SI","NO"]},{"id":"q25_todos_los_televisores_quedar","label":"Todos los televisores quedaron conectados, cableados y en funcionamiento","input":"select","options":["SI","NO"]},{"id":"q26_le_realizaron_la_entrega_del","label":"Le realizaron la entrega del control remoto para cada uno de los televisores","input":"select","options":["SI","NO"]},{"id":"q27_est_de_acuerdo_con_el_servic","label":"Está de acuerdo con el servicio recibido y autoriza el cierre de la orden","input":"select","options":["SI","NO"]},{"id":"cableado","label":"Cableado","input":"multiselect","options":["GRAPAS","DUCTOS","PEGADO","AEREO"]},{"id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":""},{"id":"red","label":"RED","input":"text","placeholder":""},{"id":"mano_de_obra","label":"MANO DE OBRA","input":"textarea"},{"id":"niveles","label":"NIVELES","input":"textarea"},{"id":"nombre_de_quien_confirma","label":"NOMBRE DE QUIEN CONFIRMA","input":"text","placeholder":""},{"id":"numero_al_que_confirma","label":"NUMERO AL QUE CONFIRMA","input":"text","placeholder":""},{"id":"tvs_insta","label":"TVS INSTA","input":"text","placeholder":""},{"id":"id_cliente","label":"ID CLIENTE","input":"textarea"},{"id":"retiro_de_equipos","label":"RETIRO DE EQUIPOS","input":"text","placeholder":""},{"id":"cantidad_equipos","label":"CANTIDAD EQUIPOS","input":"text","placeholder":""},{"id":"retiro_de_cableado_interno_c","label":"RETIRO DE CABLEADO INTERNO COMPLETO","input":"text","placeholder":""},{"id":"id_llamada_tecnico","label":"ID LLAMADA (con técnico)","input":"text"},{"id":"id_llamada_cliente","label":"ID LLAMADA (con cliente)","input":"text"}]},{"col":"E","label":"SOLO TV","code":"CS-HD-EA-MA","rows":[{"kind":"field","id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"id_llamada_tecnico","label":"ID LLAMADA (con técnico)","input":"text","prefix":"ID LLAMADA TECNICO: "},{"kind":"field","id":"mano_de_obra","label":"MANO DE OBRA","input":"textarea","prefix":"MANO DE OBRA: "},{"kind":"field","id":"nombre_de_quien_confirma","label":"NOMBRE DE QUIEN CONFIRMA","input":"text","placeholder":"","prefix":"NOMBRE DE QUIEN CONFIRMA: "},{"kind":"field","id":"numero_al_que_confirma","label":"NUMERO AL QUE CONFIRMA","input":"text","placeholder":"","prefix":"NUMERO AL QUE CONFIRMA: "},{"kind":"templated","raw":"CABLEADO: @@FIELD:cableado@@","fieldIds":["cableado"]},{"kind":"field","id":"tvs_insta","label":"TVS INSTA","input":"text","placeholder":"","prefix":"TVS INSTA: "},{"kind":"codigo_hora","id":"codigo_de_prueba","label":"CODIGO DE PRUEBA","prefix":"CODIGO DE PRUEBA: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"},{"kind":"blank"},{"kind":"blank"},{"kind":"static","text":"**CONFIRMACION CON CLIENTE**"},{"kind":"static","text":"*_*"},{"kind":"echo","refId":"id_tecnico","prefix":"ID TECNICO: "},{"kind":"echo","refId":"id_llamada_tecnico","prefix":"ID LLAMADA TECNICO: "},{"kind":"field","id":"id_llamada_cliente","label":"ID LLAMADA (con cliente)","input":"text","prefix":"ID LLAMADA CLIENTE: "},{"kind":"field","id":"id_cliente","label":"ID CLIENTE","input":"textarea","prefix":"ID CLIENTE: "},{"kind":"templated","raw":"¿Todos los equipos quedaron instalados y funcionando correctamente? @@FIELD:q28_todos_los_equipos_quedaron_i@@","fieldIds":["q28_todos_los_equipos_quedaron_i"]},{"kind":"templated","raw":"¿Está de acuerdo con el cableado realizado en la instalación de sus servicios? @@FIELD:q29_est_de_acuerdo_con_el_cablea@@","fieldIds":["q29_est_de_acuerdo_con_el_cablea"]},{"kind":"templated","raw":"¿Todos los televisores quedaron conectados, cableados y en funcionamiento? @@FIELD:q30_todos_los_televisores_quedar@@","fieldIds":["q30_todos_los_televisores_quedar"]},{"kind":"templated","raw":"¿Le realizaron la entrega del control remoto para cada uno de los televisores? @@FIELD:q31_le_realizaron_la_entrega_del@@","fieldIds":["q31_le_realizaron_la_entrega_del"]},{"kind":"templated","raw":"¿Está de acuerdo con el servicio recibido y autoriza el cierre de la orden? @@FIELD:q32_est_de_acuerdo_con_el_servic@@","fieldIds":["q32_est_de_acuerdo_con_el_servic"]},{"kind":"codigo_hora","id":"codigo_de_prueba_2","label":"CODIGO DE PRUEBA (confirmacion con cliente)","prefix":"CODIGO DE PRUEBA: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"q28_todos_los_equipos_quedaron_i","label":"Todos los equipos quedaron instalados y funcionando correctamente","input":"select","options":["SI","NO"]},{"id":"q29_est_de_acuerdo_con_el_cablea","label":"Está de acuerdo con el cableado realizado en la instalación de sus servicios","input":"select","options":["SI","NO"]},{"id":"q30_todos_los_televisores_quedar","label":"Todos los televisores quedaron conectados, cableados y en funcionamiento","input":"select","options":["SI","NO"]},{"id":"q31_le_realizaron_la_entrega_del","label":"Le realizaron la entrega del control remoto para cada uno de los televisores","input":"select","options":["SI","NO"]},{"id":"q32_est_de_acuerdo_con_el_servic","label":"Está de acuerdo con el servicio recibido y autoriza el cierre de la orden","input":"select","options":["SI","NO"]},{"id":"cableado","label":"Cableado","input":"multiselect","options":["GRAPAS","DUCTOS","PEGADO","AEREO"]},{"id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":""},{"id":"mano_de_obra","label":"MANO DE OBRA","input":"textarea"},{"id":"nombre_de_quien_confirma","label":"NOMBRE DE QUIEN CONFIRMA","input":"text","placeholder":""},{"id":"numero_al_que_confirma","label":"NUMERO AL QUE CONFIRMA","input":"text","placeholder":""},{"id":"tvs_insta","label":"TVS INSTA","input":"text","placeholder":""},{"id":"id_cliente","label":"ID CLIENTE","input":"textarea"},{"id":"id_llamada_tecnico","label":"ID LLAMADA (con técnico)","input":"text"},{"id":"id_llamada_cliente","label":"ID LLAMADA (con cliente)","input":"text"}]},{"col":"F","label":"SERVICIO DOBLE  CABLE MODEM","code":"AQ-MC-MX","rows":[{"kind":"field","id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"id_llamada_tecnico","label":"ID LLAMADA (con técnico)","input":"text","prefix":"ID LLAMADA TECNICO: "},{"kind":"field","id":"red","label":"RED","input":"text","placeholder":"","prefix":"RED: "},{"kind":"field","id":"mano_de_obra","label":"MANO DE OBRA","input":"textarea","prefix":"MANO DE OBRA: "},{"kind":"field","id":"niveles","label":"NIVELES","input":"textarea","prefix":"NIVELES: "},{"kind":"field","id":"nombre_de_quien_confirma","label":"NOMBRE DE QUIEN CONFIRMA","input":"text","placeholder":"","prefix":"NOMBRE DE QUIEN CONFIRMA: "},{"kind":"field","id":"numero_al_que_confirma","label":"NUMERO AL QUE CONFIRMA","input":"text","placeholder":"","prefix":"NUMERO AL QUE CONFIRMA: "},{"kind":"templated","raw":"CABLEADO: @@FIELD:cableado@@","fieldIds":["cableado"]},{"kind":"codigo_hora","id":"codigo_de_prueba","label":"CODIGO DE PRUEBA","prefix":"CODIGO DE PRUEBA: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"},{"kind":"blank"},{"kind":"blank"},{"kind":"static","text":"**CONFIRMACION CON CLIENTE**"},{"kind":"static","text":"*_*"},{"kind":"echo","refId":"id_tecnico","prefix":"ID TECNICO: "},{"kind":"echo","refId":"id_llamada_tecnico","prefix":"ID LLAMADA TECNICO: "},{"kind":"field","id":"id_llamada_cliente","label":"ID LLAMADA (con cliente)","input":"text","prefix":"ID LLAMADA CLIENTE: "},{"kind":"field","id":"id_cliente","label":"ID CLIENTE","input":"textarea","prefix":"ID CLIENTE: "},{"kind":"templated","raw":"¿Todos los equipos quedaron instalados y funcionando correctamente? @@FIELD:q33_todos_los_equipos_quedaron_i@@","fieldIds":["q33_todos_los_equipos_quedaron_i"]},{"kind":"templated","raw":"¿Está de acuerdo con el cableado realizado en la instalación de sus servicios? @@FIELD:q34_est_de_acuerdo_con_el_cablea@@","fieldIds":["q34_est_de_acuerdo_con_el_cablea"]},{"kind":"templated","raw":"¿La línea telefónica funciona correctamente? @@FIELD:q35_la_l_nea_telef_nica_funciona@@","fieldIds":["q35_la_l_nea_telef_nica_funciona"]},{"kind":"templated","raw":"¿Técnico le entregó aparato telefónico? (Si aplica) @@FIELD:q36_t_cnico_le_entreg_aparato_te@@","fieldIds":["q36_t_cnico_le_entreg_aparato_te"]},{"kind":"templated","raw":"¿Se realizaron pruebas en el servicio de internet y funciona correctamente? @@FIELD:q37_se_realizaron_pruebas_en_el_@@","fieldIds":["q37_se_realizaron_pruebas_en_el_"]},{"kind":"templated","raw":"¿El técnico hizo la certificación de señal wifi en su domicilio? @@FIELD:q38_el_t_cnico_hizo_la_certifica@@","fieldIds":["q38_el_t_cnico_hizo_la_certifica"]},{"kind":"templated","raw":"¿Está de acuerdo con el servicio recibido y autoriza el cierre de la orden? @@FIELD:q39_est_de_acuerdo_con_el_servic@@","fieldIds":["q39_est_de_acuerdo_con_el_servic"]},{"kind":"codigo_hora","id":"codigo_de_prueba_2","label":"CODIGO DE PRUEBA (confirmacion con cliente)","prefix":"CODIGO DE PRUEBA: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"},{"kind":"blank"},{"kind":"static","text":"----------------------------------------------------------"},{"kind":"static","text":"**SOLO PARA MIGRACION OS MX**"},{"kind":"field","id":"retiro_de_equipos","label":"RETIRO DE EQUIPOS","input":"text","placeholder":"","prefix":"RETIRO DE EQUIPOS: "},{"kind":"field","id":"cantidad_equipos","label":"CANTIDAD EQUIPOS","input":"text","placeholder":"","prefix":"CANTIDAD EQUIPOS: "},{"kind":"field","id":"retiro_de_cableado_interno_c","label":"RETIRO DE CABLEADO INTERNO COMPLETO","input":"text","placeholder":"","prefix":"RETIRO DE CABLEADO INTERNO COMPLETO: "},{"kind":"codigo_hora","id":"codigo_de_prueba_3","label":"CODIGO DE PRUEBA (solo para migracion os mx)","prefix":"CODIGO DE PRUEBA: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"q33_todos_los_equipos_quedaron_i","label":"Todos los equipos quedaron instalados y funcionando correctamente","input":"select","options":["SI","NO"]},{"id":"q34_est_de_acuerdo_con_el_cablea","label":"Está de acuerdo con el cableado realizado en la instalación de sus servicios","input":"select","options":["SI","NO"]},{"id":"q35_la_l_nea_telef_nica_funciona","label":"La línea telefónica funciona correctamente","input":"select","options":["SI","NO"]},{"id":"q36_t_cnico_le_entreg_aparato_te","label":"Técnico le entregó aparato telefónico (Si aplica)","input":"select","options":["SI","NO"]},{"id":"q37_se_realizaron_pruebas_en_el_","label":"Se realizaron pruebas en el servicio de internet y funciona correctamente","input":"select","options":["SI","NO"]},{"id":"q38_el_t_cnico_hizo_la_certifica","label":"El técnico hizo la certificación de señal wifi en su domicilio","input":"select","options":["SI","NO"]},{"id":"q39_est_de_acuerdo_con_el_servic","label":"Está de acuerdo con el servicio recibido y autoriza el cierre de la orden","input":"select","options":["SI","NO"]},{"id":"cableado","label":"Cableado","input":"multiselect","options":["GRAPAS","DUCTOS","PEGADO","AEREO"]},{"id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":""},{"id":"red","label":"RED","input":"text","placeholder":""},{"id":"mano_de_obra","label":"MANO DE OBRA","input":"textarea"},{"id":"niveles","label":"NIVELES","input":"textarea"},{"id":"nombre_de_quien_confirma","label":"NOMBRE DE QUIEN CONFIRMA","input":"text","placeholder":""},{"id":"numero_al_que_confirma","label":"NUMERO AL QUE CONFIRMA","input":"text","placeholder":""},{"id":"id_cliente","label":"ID CLIENTE","input":"textarea"},{"id":"retiro_de_equipos","label":"RETIRO DE EQUIPOS","input":"text","placeholder":""},{"id":"cantidad_equipos","label":"CANTIDAD EQUIPOS","input":"text","placeholder":""},{"id":"retiro_de_cableado_interno_c","label":"RETIRO DE CABLEADO INTERNO COMPLETO","input":"text","placeholder":""},{"id":"id_llamada_tecnico","label":"ID LLAMADA (con técnico)","input":"text"},{"id":"id_llamada_cliente","label":"ID LLAMADA (con cliente)","input":"text"}]},{"col":"G","label":"CAMBIO DE EQUIPO CABLE MODEM","code":"CH-CW","rows":[{"kind":"field","id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"id_llamada_tecnico","label":"ID LLAMADA (con técnico)","input":"text","prefix":"ID LLAMADA TECNICO: "},{"kind":"field","id":"red","label":"RED","input":"text","placeholder":"","prefix":"RED: "},{"kind":"field","id":"mano_de_obra","label":"MANO DE OBRA","input":"textarea","prefix":"MANO DE OBRA: "},{"kind":"field","id":"niveles","label":"NIVELES","input":"textarea","prefix":"NIVELES: "},{"kind":"field","id":"nombre_de_quien_confirma","label":"NOMBRE DE QUIEN CONFIRMA","input":"text","placeholder":"","prefix":"NOMBRE DE QUIEN CONFIRMA: "},{"kind":"field","id":"numero_al_que_confirma","label":"NUMERO AL QUE CONFIRMA","input":"text","placeholder":"","prefix":"NUMERO AL QUE CONFIRMA: "},{"kind":"templated","raw":"CABLEADO: @@FIELD:cableado@@","fieldIds":["cableado"]},{"kind":"codigo_hora","id":"codigo_de_prueba","label":"CODIGO DE PRUEBA","prefix":"CODIGO DE PRUEBA: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"},{"kind":"blank"},{"kind":"blank"},{"kind":"static","text":"**CONFIRMACION CON CLIENTE**"},{"kind":"static","text":"*_*"},{"kind":"echo","refId":"id_tecnico","prefix":"ID TECNICO: "},{"kind":"echo","refId":"id_llamada_tecnico","prefix":"ID LLAMADA TECNICO: "},{"kind":"field","id":"id_llamada_cliente","label":"ID LLAMADA (con cliente)","input":"text","prefix":"ID LLAMADA CLIENTE: "},{"kind":"field","id":"id_cliente","label":"ID CLIENTE","input":"textarea","prefix":"ID CLIENTE: "},{"kind":"templated","raw":"¿Todos los equipos quedaron instalados y funcionando correctamente? @@FIELD:q40_todos_los_equipos_quedaron_i@@","fieldIds":["q40_todos_los_equipos_quedaron_i"]},{"kind":"templated","raw":"¿Está de acuerdo con el cableado realizado en la instalación de sus servicios? @@FIELD:q41_est_de_acuerdo_con_el_cablea@@","fieldIds":["q41_est_de_acuerdo_con_el_cablea"]},{"kind":"templated","raw":"¿La línea telefónica funciona correctamente? @@FIELD:q42_la_l_nea_telef_nica_funciona@@","fieldIds":["q42_la_l_nea_telef_nica_funciona"]},{"kind":"templated","raw":"¿Técnico le entregó aparato telefónico? (Si aplica) @@FIELD:q43_t_cnico_le_entreg_aparato_te@@","fieldIds":["q43_t_cnico_le_entreg_aparato_te"]},{"kind":"templated","raw":"¿Se realizaron pruebas en el servicio de internet y funciona correctamente? @@FIELD:q44_se_realizaron_pruebas_en_el_@@","fieldIds":["q44_se_realizaron_pruebas_en_el_"]},{"kind":"templated","raw":"¿El técnico hizo la certificación de señal wifi en su domicilio? @@FIELD:q45_el_t_cnico_hizo_la_certifica@@","fieldIds":["q45_el_t_cnico_hizo_la_certifica"]},{"kind":"templated","raw":"¿Está de acuerdo con el servicio recibido y autoriza el cierre de la orden? @@FIELD:q46_est_de_acuerdo_con_el_servic@@","fieldIds":["q46_est_de_acuerdo_con_el_servic"]},{"kind":"codigo_hora","id":"codigo_de_prueba_2","label":"CODIGO DE PRUEBA (confirmacion con cliente)","prefix":"CODIGO DE PRUEBA: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"q40_todos_los_equipos_quedaron_i","label":"Todos los equipos quedaron instalados y funcionando correctamente","input":"select","options":["SI","NO"]},{"id":"q41_est_de_acuerdo_con_el_cablea","label":"Está de acuerdo con el cableado realizado en la instalación de sus servicios","input":"select","options":["SI","NO"]},{"id":"q42_la_l_nea_telef_nica_funciona","label":"La línea telefónica funciona correctamente","input":"select","options":["SI","NO"]},{"id":"q43_t_cnico_le_entreg_aparato_te","label":"Técnico le entregó aparato telefónico (Si aplica)","input":"select","options":["SI","NO"]},{"id":"q44_se_realizaron_pruebas_en_el_","label":"Se realizaron pruebas en el servicio de internet y funciona correctamente","input":"select","options":["SI","NO"]},{"id":"q45_el_t_cnico_hizo_la_certifica","label":"El técnico hizo la certificación de señal wifi en su domicilio","input":"select","options":["SI","NO"]},{"id":"q46_est_de_acuerdo_con_el_servic","label":"Está de acuerdo con el servicio recibido y autoriza el cierre de la orden","input":"select","options":["SI","NO"]},{"id":"cableado","label":"Cableado","input":"multiselect","options":["GRAPAS","DUCTOS","PEGADO","AEREO"]},{"id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":""},{"id":"red","label":"RED","input":"text","placeholder":""},{"id":"mano_de_obra","label":"MANO DE OBRA","input":"textarea"},{"id":"niveles","label":"NIVELES","input":"textarea"},{"id":"nombre_de_quien_confirma","label":"NOMBRE DE QUIEN CONFIRMA","input":"text","placeholder":""},{"id":"numero_al_que_confirma","label":"NUMERO AL QUE CONFIRMA","input":"text","placeholder":""},{"id":"id_cliente","label":"ID CLIENTE","input":"textarea"},{"id":"id_llamada_tecnico","label":"ID LLAMADA (con técnico)","input":"text"},{"id":"id_llamada_cliente","label":"ID LLAMADA (con cliente)","input":"text"}]},{"col":"H","label":"TRASLADOS ORDENES DQ (DOBLE O TRIPLE)","code":"DQ","rows":[{"kind":"field","id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"id_llamada_tecnico","label":"ID LLAMADA (con técnico)","input":"text","prefix":"ID LLAMADA TECNICO: "},{"kind":"field","id":"red","label":"RED","input":"text","placeholder":"","prefix":"RED: "},{"kind":"field","id":"mano_de_obra","label":"MANO DE OBRA","input":"textarea","prefix":"MANO DE OBRA: "},{"kind":"field","id":"niveles","label":"NIVELES","input":"textarea","prefix":"NIVELES: "},{"kind":"field","id":"nombre_de_quien_confirma","label":"NOMBRE DE QUIEN CONFIRMA","input":"text","placeholder":"","prefix":"NOMBRE DE QUIEN CONFIRMA: "},{"kind":"field","id":"numero_al_que_confirma","label":"NUMERO AL QUE CONFIRMA","input":"text","placeholder":"","prefix":"NUMERO AL QUE CONFIRMA: "},{"kind":"templated","raw":"CABLEADO: @@FIELD:cableado@@","fieldIds":["cableado"]},{"kind":"field","id":"tvs_insta","label":"TVS INSTA","input":"text","placeholder":"","prefix":"TVS INSTA: "},{"kind":"codigo_hora","id":"codigo_de_prueba","label":"CODIGO DE PRUEBA","prefix":"CODIGO DE PRUEBA: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"},{"kind":"blank"},{"kind":"blank"},{"kind":"static","text":"**CONFIRMACION CON CLIENTE**"},{"kind":"static","text":"*_*"},{"kind":"echo","refId":"id_tecnico","prefix":"ID TECNICO: "},{"kind":"echo","refId":"id_llamada_tecnico","prefix":"ID LLAMADA TECNICO: "},{"kind":"field","id":"id_llamada_cliente","label":"ID LLAMADA (con cliente)","input":"text","prefix":"ID LLAMADA CLIENTE: "},{"kind":"field","id":"id_cliente","label":"ID CLIENTE","input":"textarea","prefix":"ID CLIENTE: "},{"kind":"templated","raw":"¿Todos los equipos quedaron instalados y funcionando correctamente? @@FIELD:q47_todos_los_equipos_quedaron_i@@","fieldIds":["q47_todos_los_equipos_quedaron_i"]},{"kind":"templated","raw":"¿Está de acuerdo con el cableado realizado en la instalación de sus servicios? @@FIELD:q48_est_de_acuerdo_con_el_cablea@@","fieldIds":["q48_est_de_acuerdo_con_el_cablea"]},{"kind":"templated","raw":"¿La línea telefónica funciona correctamente? @@FIELD:q49_la_l_nea_telef_nica_funciona@@","fieldIds":["q49_la_l_nea_telef_nica_funciona"]},{"kind":"templated","raw":"¿Técnico le entregó aparato telefónico? (Si aplica) @@FIELD:q50_t_cnico_le_entreg_aparato_te@@","fieldIds":["q50_t_cnico_le_entreg_aparato_te"]},{"kind":"templated","raw":"¿Se realizaron pruebas en el servicio de internet y funciona correctamente? @@FIELD:q51_se_realizaron_pruebas_en_el_@@","fieldIds":["q51_se_realizaron_pruebas_en_el_"]},{"kind":"templated","raw":"¿Todos los televisores quedaron conectados, cableados y en funcionamiento? @@FIELD:q52_todos_los_televisores_quedar@@","fieldIds":["q52_todos_los_televisores_quedar"]},{"kind":"templated","raw":"¿Está de acuerdo con el servicio recibido y autoriza el cierre de la orden? @@FIELD:q53_est_de_acuerdo_con_el_servic@@","fieldIds":["q53_est_de_acuerdo_con_el_servic"]},{"kind":"codigo_hora","id":"codigo_de_prueba_2","label":"CODIGO DE PRUEBA (confirmacion con cliente)","prefix":"CODIGO DE PRUEBA: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"q47_todos_los_equipos_quedaron_i","label":"Todos los equipos quedaron instalados y funcionando correctamente","input":"select","options":["SI","NO"]},{"id":"q48_est_de_acuerdo_con_el_cablea","label":"Está de acuerdo con el cableado realizado en la instalación de sus servicios","input":"select","options":["SI","NO"]},{"id":"q49_la_l_nea_telef_nica_funciona","label":"La línea telefónica funciona correctamente","input":"select","options":["SI","NO"]},{"id":"q50_t_cnico_le_entreg_aparato_te","label":"Técnico le entregó aparato telefónico (Si aplica)","input":"select","options":["SI","NO"]},{"id":"q51_se_realizaron_pruebas_en_el_","label":"Se realizaron pruebas en el servicio de internet y funciona correctamente","input":"select","options":["SI","NO"]},{"id":"q52_todos_los_televisores_quedar","label":"Todos los televisores quedaron conectados, cableados y en funcionamiento","input":"select","options":["SI","NO"]},{"id":"q53_est_de_acuerdo_con_el_servic","label":"Está de acuerdo con el servicio recibido y autoriza el cierre de la orden","input":"select","options":["SI","NO"]},{"id":"cableado","label":"Cableado","input":"multiselect","options":["GRAPAS","DUCTOS","PEGADO","AEREO"]},{"id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":""},{"id":"red","label":"RED","input":"text","placeholder":""},{"id":"mano_de_obra","label":"MANO DE OBRA","input":"textarea"},{"id":"niveles","label":"NIVELES","input":"textarea"},{"id":"nombre_de_quien_confirma","label":"NOMBRE DE QUIEN CONFIRMA","input":"text","placeholder":""},{"id":"numero_al_que_confirma","label":"NUMERO AL QUE CONFIRMA","input":"text","placeholder":""},{"id":"tvs_insta","label":"TVS INSTA","input":"text","placeholder":""},{"id":"id_cliente","label":"ID CLIENTE","input":"textarea"},{"id":"id_llamada_tecnico","label":"ID LLAMADA (con técnico)","input":"text"},{"id":"id_llamada_cliente","label":"ID LLAMADA (con cliente)","input":"text"}]}]},"GPON":{"ACTIVACION":[{"col":"B","label":"GPON  TRIPLE INTERNET LINEA TV","code":"GP-MJ-MG","rows":[{"kind":"field","id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"id_llamada","label":"ID LLAMADA","input":"text","placeholder":"","prefix":"ID LLAMADA: "},{"kind":"static","text":"********ACTIVACIÓN*********"},{"kind":"field","id":"marca","label":"MARCA","input":"text","placeholder":"","prefix":"MARCA: "},{"kind":"field","id":"modelo","label":"MODELO","input":"text","placeholder":"","prefix":"MODELO: "},{"kind":"field","id":"red","label":"RED","input":"text","placeholder":"","prefix":"RED: "},{"kind":"field","id":"mac","label":"MAC","input":"text","placeholder":"","prefix":"MAC: "},{"kind":"field","id":"serie","label":"SERIE","input":"text","placeholder":"","prefix":"SERIE: "},{"kind":"field","id":"correo","label":"CORREO","input":"text","placeholder":"","prefix":"CORREO: "},{"kind":"tvgroup","groupId":"tv_ott_1","label":"OTT","prefix":"OTT: ","max":8},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":""},{"id":"id_llamada","label":"ID LLAMADA","input":"text","placeholder":""},{"id":"marca","label":"MARCA","input":"text","placeholder":""},{"id":"modelo","label":"MODELO","input":"text","placeholder":""},{"id":"red","label":"RED","input":"text","placeholder":""},{"id":"mac","label":"MAC","input":"text","placeholder":""},{"id":"serie","label":"SERIE","input":"text","placeholder":""},{"id":"correo","label":"CORREO","input":"text","placeholder":""}]},{"col":"C","label":"GPON DOBLE INTERNET Y LINEA","code":"GP-MG-MJ","rows":[{"kind":"field","id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"id_llamada","label":"ID LLAMADA","input":"text","placeholder":"","prefix":"ID LLAMADA: "},{"kind":"static","text":"********ACTIVACIÓN*********"},{"kind":"field","id":"marca","label":"MARCA","input":"text","placeholder":"","prefix":"MARCA: "},{"kind":"field","id":"modelo","label":"MODELO","input":"text","placeholder":"","prefix":"MODELO: "},{"kind":"field","id":"red","label":"RED","input":"text","placeholder":"","prefix":"RED: "},{"kind":"field","id":"mac","label":"MAC","input":"text","placeholder":"","prefix":"MAC: "},{"kind":"field","id":"serie","label":"SERIE","input":"text","placeholder":"","prefix":"SERIE: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":""},{"id":"id_llamada","label":"ID LLAMADA","input":"text","placeholder":""},{"id":"marca","label":"MARCA","input":"text","placeholder":""},{"id":"modelo","label":"MODELO","input":"text","placeholder":""},{"id":"red","label":"RED","input":"text","placeholder":""},{"id":"mac","label":"MAC","input":"text","placeholder":""},{"id":"serie","label":"SERIE","input":"text","placeholder":""}]},{"col":"D","label":"SOLO TV","code":"MS-DS-M7","rows":[{"kind":"blank"},{"kind":"field","id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"id_llamada","label":"ID LLAMADA","input":"text","placeholder":"","prefix":"ID LLAMADA: "},{"kind":"static","text":"********ACTIVACIÓN/DE/IPTV*********"},{"kind":"field","id":"correo","label":"CORREO","input":"text","placeholder":"","prefix":"CORREO: "},{"kind":"tvgroup","groupId":"tv_ott_1","label":"OTT","prefix":"OTT: ","max":8},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":""},{"id":"id_llamada","label":"ID LLAMADA","input":"text","placeholder":""},{"id":"correo","label":"CORREO","input":"text","placeholder":""}]},{"col":"E","label":"CAMBIO DE EQUIPO DE IPTV","code":"CS","rows":[{"kind":"blank"},{"kind":"field","id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"id_llamada","label":"ID LLAMADA","input":"text","placeholder":"","prefix":"ID LLAMADA: "},{"kind":"field","id":"correo","label":"CORREO","input":"text","placeholder":"","prefix":"CORREO: "},{"kind":"static","text":"--------SERIE A RETIRAR---------"},{"kind":"tvgroup","groupId":"tv_ott_1","label":"OTT","prefix":"OTT: ","max":8},{"kind":"static","text":"--------SERIE A ACTIVAR--------"},{"kind":"tvgroup","groupId":"tv_ott_2","label":"OTT","prefix":"OTT: ","max":8},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":""},{"id":"id_llamada","label":"ID LLAMADA","input":"text","placeholder":""},{"id":"correo","label":"CORREO","input":"text","placeholder":""}]},{"col":"F","label":"DQ TIPO DE SERVICIO GI","code":"DQ","rows":[{"kind":"blank"},{"kind":"blank"},{"kind":"field","id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"id_llamada","label":"ID LLAMADA","input":"text","placeholder":"","prefix":"ID LLAMADA: "},{"kind":"field","id":"red","label":"Red","input":"text","placeholder":"","prefix":"Red: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":""},{"id":"id_llamada","label":"ID LLAMADA","input":"text","placeholder":""},{"id":"red","label":"Red","input":"text","placeholder":""}]},{"col":"G","label":"CAMBIO DE ETAPA A GZ","code":"GZ","rows":[{"kind":"blank"},{"kind":"blank"},{"kind":"field","id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"id_llamada","label":"ID LLAMADA","input":"text","placeholder":"","prefix":"ID LLAMADA: "},{"kind":"static","text":"TECNICO SE COMUNICA PARA CAMBIO DE ETAPA A GZ"},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":""},{"id":"id_llamada","label":"ID LLAMADA","input":"text","placeholder":""}]},{"col":"H","label":"CAMBIO DE EQUIPO ONT","code":"CH","rows":[{"kind":"blank"},{"kind":"field","id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"id_llamada","label":"ID LLAMADA","input":"text","placeholder":"","prefix":"ID LLAMADA: "},{"kind":"static","text":"***SERIES A RETIRAR***"},{"kind":"field","id":"macaddres","label":"MACADDRES (series a retirar)","input":"text","placeholder":"","prefix":"MACADDRES: "},{"kind":"field","id":"serie","label":"SERIE (series a retirar)","input":"text","placeholder":"","prefix":"SERIE: "},{"kind":"static","text":"***SERIES A ACTIVAR***"},{"kind":"field","id":"macaddres_2","label":"MACADDRES (series a activar)","input":"text","placeholder":"","prefix":"MACADDRES: "},{"kind":"field","id":"serie_2","label":"SERIE (series a activar)","input":"text","placeholder":"","prefix":"SERIE: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":""},{"id":"id_llamada","label":"ID LLAMADA","input":"text","placeholder":""},{"id":"macaddres","label":"MACADDRES (series a retirar)","input":"text","placeholder":""},{"id":"serie","label":"SERIE (series a retirar)","input":"text","placeholder":""},{"id":"macaddres_2","label":"MACADDRES (series a activar)","input":"text","placeholder":""},{"id":"serie_2","label":"SERIE (series a activar)","input":"text","placeholder":""}]},{"col":"I","label":"REPETIDORES","code":"CG","rows":[{"kind":"field","id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"id_llamada","label":"ID LLAMADA","input":"text","placeholder":"","prefix":"ID LLAMADA: "},{"kind":"static","text":"********ACTIVACIÓN*********"},{"kind":"field","id":"marca","label":"MARCA","input":"text","placeholder":"","prefix":"MARCA: "},{"kind":"field","id":"modelo","label":"MODELO","input":"text","placeholder":"","prefix":"MODELO: "},{"kind":"field","id":"mac","label":"MAC","input":"text","placeholder":"","prefix":"MAC: "},{"kind":"field","id":"serie","label":"SERIE","input":"text","placeholder":"","prefix":"SERIE: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":""},{"id":"id_llamada","label":"ID LLAMADA","input":"text","placeholder":""},{"id":"marca","label":"MARCA","input":"text","placeholder":""},{"id":"modelo","label":"MODELO","input":"text","placeholder":""},{"id":"mac","label":"MAC","input":"text","placeholder":""},{"id":"serie","label":"SERIE","input":"text","placeholder":""}]},{"col":"M7","label":"ORDEN M7","code":"M7","rows":[{"kind":"blank"},{"kind":"field","id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"id_llamada","label":"ID LLAMADA","input":"text","placeholder":"","prefix":"ID LLAMADA: "},{"kind":"static","text":"------------------MEMO DE ACTIVACION-------------------"},{"kind":"blank"},{"kind":"static","text":"********ACTIVACIÓN*********"},{"kind":"field","id":"correo","label":"CORREO","input":"text","placeholder":"","prefix":"CORREO: "},{"kind":"tvgroup","groupId":"tv_ott_1","label":"OTT","prefix":"OTT: ","max":8},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":""},{"id":"id_llamada","label":"ID LLAMADA","input":"text","placeholder":""},{"id":"correo","label":"CORREO","input":"text","placeholder":""}]}],"CONFIRMACION":[{"col":"B","label":"GPON  TRIPLE INTERNT LINEA TV","code":"GP","rows":[{"kind":"field","id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"id_llamada_tecnico","label":"ID LLAMADA (con técnico)","input":"text","prefix":"ID LLAMADA TECNICO: "},{"kind":"field","id":"red","label":"RED","input":"text","placeholder":"","prefix":"RED: "},{"kind":"field","id":"mano_de_obra","label":"MANO DE OBRA","input":"textarea","prefix":"MANO DE OBRA: "},{"kind":"field","id":"niveles","label":"NIVELES","input":"textarea","prefix":"NIVELES: "},{"kind":"field","id":"nombre_de_quien_confirma","label":"NOMBRE DE QUIEN CONFIRMA","input":"text","placeholder":"","prefix":"NOMBRE DE QUIEN CONFIRMA: "},{"kind":"field","id":"numero_al_que_confirma","label":"NUMERO AL QUE CONFIRMA","input":"text","placeholder":"","prefix":"NUMERO AL QUE CONFIRMA: "},{"kind":"templated","raw":"CABLEADO: @@FIELD:cableado@@","fieldIds":["cableado"]},{"kind":"field","id":"tvs_insta","label":"TVS INSTA","input":"text","placeholder":"","prefix":"TVS INSTA: "},{"kind":"field","id":"validado_en_gui","label":"VALIDADO EN GUI","input":"text","placeholder":"","prefix":"VALIDADO EN GUI: "},{"kind":"field","id":"validado_en_skyway","label":"VALIDADO EN SKYWAY","input":"text","placeholder":"","prefix":"VALIDADO EN SKYWAY: "},{"kind":"codigo_hora","id":"codigo_de_prueba","label":"CODIGO DE PRUEBA","prefix":"CODIGO DE PRUEBA: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"},{"kind":"blank"},{"kind":"blank"},{"kind":"static","text":"**CONFIRMACION CON CLIENTE**"},{"kind":"static","text":"*_*"},{"kind":"echo","refId":"id_tecnico","prefix":"ID TECNICO: "},{"kind":"echo","refId":"id_llamada_tecnico","prefix":"ID LLAMADA TECNICO: "},{"kind":"field","id":"id_llamada_cliente","label":"ID LLAMADA (con cliente)","input":"text","prefix":"ID LLAMADA CLIENTE: "},{"kind":"field","id":"id_cliente","label":"ID CLIENTE","input":"textarea","prefix":"ID CLIENTE: "},{"kind":"templated","raw":"¿Todos los equipos quedaron instalados y funcionando correctamente? @@FIELD:q54_todos_los_equipos_quedaron_i@@","fieldIds":["q54_todos_los_equipos_quedaron_i"]},{"kind":"templated","raw":"¿Está de acuerdo con el cableado realizado en la instalación de sus servicios? @@FIELD:q55_est_de_acuerdo_con_el_cablea@@","fieldIds":["q55_est_de_acuerdo_con_el_cablea"]},{"kind":"templated","raw":"¿La línea telefónica funciona correctamente? @@FIELD:q56_la_l_nea_telef_nica_funciona@@","fieldIds":["q56_la_l_nea_telef_nica_funciona"]},{"kind":"templated","raw":"¿Técnico le entregó aparato telefónico? (Si aplica) @@FIELD:q57_t_cnico_le_entreg_aparato_te@@","fieldIds":["q57_t_cnico_le_entreg_aparato_te"]},{"kind":"templated","raw":"¿Se realizaron pruebas en el servicio de internet y funciona correctamente? @@FIELD:q58_se_realizaron_pruebas_en_el_@@","fieldIds":["q58_se_realizaron_pruebas_en_el_"]},{"kind":"templated","raw":"¿El técnico hizo la certificación de señal wifi en su domicilio? @@FIELD:q59_el_t_cnico_hizo_la_certifica@@","fieldIds":["q59_el_t_cnico_hizo_la_certifica"]},{"kind":"templated","raw":"¿Todos los televisores quedaron conectados, cableados y en funcionamiento? @@FIELD:q60_todos_los_televisores_quedar@@","fieldIds":["q60_todos_los_televisores_quedar"]},{"kind":"templated","raw":"¿Le realizaron la entrega del control remoto para cada uno de los televisores? @@FIELD:q61_le_realizaron_la_entrega_del@@","fieldIds":["q61_le_realizaron_la_entrega_del"]},{"kind":"templated","raw":"¿Está de acuerdo con el servicio recibido y autoriza el cierre de la orden? @@FIELD:q62_est_de_acuerdo_con_el_servic@@","fieldIds":["q62_est_de_acuerdo_con_el_servic"]},{"kind":"codigo_hora","id":"codigo_de_prueba_2","label":"CODIGO DE PRUEBA (confirmacion con cliente)","prefix":"CODIGO DE PRUEBA: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"q54_todos_los_equipos_quedaron_i","label":"Todos los equipos quedaron instalados y funcionando correctamente","input":"select","options":["SI","NO"]},{"id":"q55_est_de_acuerdo_con_el_cablea","label":"Está de acuerdo con el cableado realizado en la instalación de sus servicios","input":"select","options":["SI","NO"]},{"id":"q56_la_l_nea_telef_nica_funciona","label":"La línea telefónica funciona correctamente","input":"select","options":["SI","NO"]},{"id":"q57_t_cnico_le_entreg_aparato_te","label":"Técnico le entregó aparato telefónico (Si aplica)","input":"select","options":["SI","NO"]},{"id":"q58_se_realizaron_pruebas_en_el_","label":"Se realizaron pruebas en el servicio de internet y funciona correctamente","input":"select","options":["SI","NO"]},{"id":"q59_el_t_cnico_hizo_la_certifica","label":"El técnico hizo la certificación de señal wifi en su domicilio","input":"select","options":["SI","NO"]},{"id":"q60_todos_los_televisores_quedar","label":"Todos los televisores quedaron conectados, cableados y en funcionamiento","input":"select","options":["SI","NO"]},{"id":"q61_le_realizaron_la_entrega_del","label":"Le realizaron la entrega del control remoto para cada uno de los televisores","input":"select","options":["SI","NO"]},{"id":"q62_est_de_acuerdo_con_el_servic","label":"Está de acuerdo con el servicio recibido y autoriza el cierre de la orden","input":"select","options":["SI","NO"]},{"id":"cableado","label":"Cableado","input":"multiselect","options":["GRAPAS","DUCTOS","PEGADO","AEREO"]},{"id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":""},{"id":"red","label":"RED","input":"text","placeholder":""},{"id":"mano_de_obra","label":"MANO DE OBRA","input":"textarea"},{"id":"niveles","label":"NIVELES","input":"textarea"},{"id":"nombre_de_quien_confirma","label":"NOMBRE DE QUIEN CONFIRMA","input":"text","placeholder":""},{"id":"numero_al_que_confirma","label":"NUMERO AL QUE CONFIRMA","input":"text","placeholder":""},{"id":"tvs_insta","label":"TVS INSTA","input":"text","placeholder":""},{"id":"validado_en_gui","label":"VALIDADO EN GUI","input":"text","placeholder":""},{"id":"validado_en_skyway","label":"VALIDADO EN SKYWAY","input":"text","placeholder":""},{"id":"id_cliente","label":"ID CLIENTE","input":"textarea"},{"id":"id_llamada_tecnico","label":"ID LLAMADA (con técnico)","input":"text"},{"id":"id_llamada_cliente","label":"ID LLAMADA (con cliente)","input":"text"}]},{"col":"C","label":"GPON  TRIPLE MIGRACION INTERNT LINEA TV","code":"MJ-MG","rows":[{"kind":"field","id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"id_llamada_tecnico","label":"ID LLAMADA (con técnico)","input":"text","prefix":"ID LLAMADA TECNICO: "},{"kind":"field","id":"red","label":"RED","input":"text","placeholder":"","prefix":"RED: "},{"kind":"field","id":"mano_de_obra","label":"MANO DE OBRA","input":"textarea","prefix":"MANO DE OBRA: "},{"kind":"field","id":"niveles","label":"NIVELES","input":"textarea","prefix":"NIVELES: "},{"kind":"field","id":"nombre_de_quien_confirma","label":"NOMBRE DE QUIEN CONFIRMA","input":"text","placeholder":"","prefix":"NOMBRE DE QUIEN CONFIRMA: "},{"kind":"field","id":"numero_al_que_confirma","label":"NUMERO AL QUE CONFIRMA","input":"text","placeholder":"","prefix":"NUMERO AL QUE CONFIRMA: "},{"kind":"templated","raw":"CABLEADO: @@FIELD:cableado@@","fieldIds":["cableado"]},{"kind":"field","id":"tvs_insta","label":"TVS INSTA","input":"text","placeholder":"","prefix":"TVS INSTA: "},{"kind":"codigo_hora","id":"codigo_de_prueba","label":"CODIGO DE PRUEBA","prefix":"CODIGO DE PRUEBA: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"},{"kind":"blank"},{"kind":"blank"},{"kind":"static","text":"**CONFIRMACION CON CLIENTE**"},{"kind":"static","text":"*_*"},{"kind":"echo","refId":"id_tecnico","prefix":"ID TECNICO: "},{"kind":"echo","refId":"id_llamada_tecnico","prefix":"ID LLAMADA TECNICO: "},{"kind":"field","id":"id_llamada_cliente","label":"ID LLAMADA (con cliente)","input":"text","prefix":"ID LLAMADA CLIENTE: "},{"kind":"field","id":"id_cliente","label":"ID CLIENTE","input":"textarea","prefix":"ID CLIENTE: "},{"kind":"templated","raw":"¿Todos los equipos quedaron instalados y funcionando correctamente? @@FIELD:q63_todos_los_equipos_quedaron_i@@","fieldIds":["q63_todos_los_equipos_quedaron_i"]},{"kind":"templated","raw":"¿Está de acuerdo con el cableado realizado en la instalación de sus servicios? @@FIELD:q64_est_de_acuerdo_con_el_cablea@@","fieldIds":["q64_est_de_acuerdo_con_el_cablea"]},{"kind":"templated","raw":"¿La línea telefónica funciona correctamente? @@FIELD:q65_la_l_nea_telef_nica_funciona@@","fieldIds":["q65_la_l_nea_telef_nica_funciona"]},{"kind":"templated","raw":"¿Técnico le entregó aparato telefónico? (Si aplica) @@FIELD:q66_t_cnico_le_entreg_aparato_te@@","fieldIds":["q66_t_cnico_le_entreg_aparato_te"]},{"kind":"templated","raw":"¿Se realizaron pruebas en el servicio de internet y funciona correctamente? @@FIELD:q67_se_realizaron_pruebas_en_el_@@","fieldIds":["q67_se_realizaron_pruebas_en_el_"]},{"kind":"templated","raw":"¿El técnico hizo la certificación de señal wifi en su domicilio? @@FIELD:q68_el_t_cnico_hizo_la_certifica@@","fieldIds":["q68_el_t_cnico_hizo_la_certifica"]},{"kind":"templated","raw":"¿Todos los televisores quedaron conectados, cableados y en funcionamiento? @@FIELD:q69_todos_los_televisores_quedar@@","fieldIds":["q69_todos_los_televisores_quedar"]},{"kind":"templated","raw":"¿Le realizaron la entrega del control remoto para cada uno de los televisores? @@FIELD:q70_le_realizaron_la_entrega_del@@","fieldIds":["q70_le_realizaron_la_entrega_del"]},{"kind":"templated","raw":"¿Está de acuerdo con el servicio recibido y autoriza el cierre de la orden? @@FIELD:q71_est_de_acuerdo_con_el_servic@@","fieldIds":["q71_est_de_acuerdo_con_el_servic"]},{"kind":"codigo_hora","id":"codigo_de_prueba_2","label":"CODIGO DE PRUEBA (confirmacion con cliente)","prefix":"CODIGO DE PRUEBA: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"},{"kind":"static","text":"----------------------------------------------------------"},{"kind":"field","id":"retiro_de_equipos","label":"RETIRO DE EQUIPOS","input":"text","placeholder":"","prefix":"RETIRO DE EQUIPOS: "},{"kind":"field","id":"cantidad_equipos","label":"CANTIDAD EQUIPOS","input":"text","placeholder":"","prefix":"CANTIDAD EQUIPOS: "},{"kind":"field","id":"retiro_de_cableado_interno_c","label":"RETIRO DE CABLEADO INTERNO COMPLETO","input":"text","placeholder":"","prefix":"RETIRO DE CABLEADO INTERNO COMPLETO: "},{"kind":"codigo_hora","id":"codigo_de_prueba_3","label":"CODIGO DE PRUEBA (confirmacion con cliente)","prefix":"CODIGO DE PRUEBA: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"q63_todos_los_equipos_quedaron_i","label":"Todos los equipos quedaron instalados y funcionando correctamente","input":"select","options":["SI","NO"]},{"id":"q64_est_de_acuerdo_con_el_cablea","label":"Está de acuerdo con el cableado realizado en la instalación de sus servicios","input":"select","options":["SI","NO"]},{"id":"q65_la_l_nea_telef_nica_funciona","label":"La línea telefónica funciona correctamente","input":"select","options":["SI","NO"]},{"id":"q66_t_cnico_le_entreg_aparato_te","label":"Técnico le entregó aparato telefónico (Si aplica)","input":"select","options":["SI","NO"]},{"id":"q67_se_realizaron_pruebas_en_el_","label":"Se realizaron pruebas en el servicio de internet y funciona correctamente","input":"select","options":["SI","NO"]},{"id":"q68_el_t_cnico_hizo_la_certifica","label":"El técnico hizo la certificación de señal wifi en su domicilio","input":"select","options":["SI","NO"]},{"id":"q69_todos_los_televisores_quedar","label":"Todos los televisores quedaron conectados, cableados y en funcionamiento","input":"select","options":["SI","NO"]},{"id":"q70_le_realizaron_la_entrega_del","label":"Le realizaron la entrega del control remoto para cada uno de los televisores","input":"select","options":["SI","NO"]},{"id":"q71_est_de_acuerdo_con_el_servic","label":"Está de acuerdo con el servicio recibido y autoriza el cierre de la orden","input":"select","options":["SI","NO"]},{"id":"cableado","label":"Cableado","input":"multiselect","options":["GRAPAS","DUCTOS","PEGADO","AEREO"]},{"id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":""},{"id":"red","label":"RED","input":"text","placeholder":""},{"id":"mano_de_obra","label":"MANO DE OBRA","input":"textarea"},{"id":"niveles","label":"NIVELES","input":"textarea"},{"id":"nombre_de_quien_confirma","label":"NOMBRE DE QUIEN CONFIRMA","input":"text","placeholder":""},{"id":"numero_al_que_confirma","label":"NUMERO AL QUE CONFIRMA","input":"text","placeholder":""},{"id":"tvs_insta","label":"TVS INSTA","input":"text","placeholder":""},{"id":"id_cliente","label":"ID CLIENTE","input":"textarea"},{"id":"retiro_de_equipos","label":"RETIRO DE EQUIPOS","input":"text","placeholder":""},{"id":"cantidad_equipos","label":"CANTIDAD EQUIPOS","input":"text","placeholder":""},{"id":"retiro_de_cableado_interno_c","label":"RETIRO DE CABLEADO INTERNO COMPLETO","input":"text","placeholder":""},{"id":"id_llamada_tecnico","label":"ID LLAMADA (con técnico)","input":"text"},{"id":"id_llamada_cliente","label":"ID LLAMADA (con cliente)","input":"text"}]},{"col":"D","label":"GPON DOBLE INTERNET Y LINEA","code":"GP","rows":[{"kind":"field","id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"id_llamada_tecnico","label":"ID LLAMADA (con técnico)","input":"text","prefix":"ID LLAMADA TECNICO: "},{"kind":"field","id":"red","label":"RED","input":"text","placeholder":"","prefix":"RED: "},{"kind":"field","id":"mano_de_obra","label":"MANO DE OBRA","input":"textarea","prefix":"MANO DE OBRA: "},{"kind":"field","id":"niveles","label":"NIVELES","input":"textarea","prefix":"NIVELES: "},{"kind":"field","id":"nombre_de_quien_confirma","label":"NOMBRE DE QUIEN CONFIRMA","input":"text","placeholder":"","prefix":"NOMBRE DE QUIEN CONFIRMA: "},{"kind":"field","id":"numero_al_que_confirma","label":"NUMERO AL QUE CONFIRMA","input":"text","placeholder":"","prefix":"NUMERO AL QUE CONFIRMA: "},{"kind":"templated","raw":"CABLEADO: @@FIELD:cableado@@","fieldIds":["cableado"]},{"kind":"codigo_hora","id":"codigo_de_prueba","label":"CODIGO DE PRUEBA","prefix":"CODIGO DE PRUEBA: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"},{"kind":"blank"},{"kind":"blank"},{"kind":"static","text":"**CONFIRMACION CON CLIENTE**"},{"kind":"static","text":"*_*"},{"kind":"echo","refId":"id_tecnico","prefix":"ID TECNICO: "},{"kind":"echo","refId":"id_llamada_tecnico","prefix":"ID LLAMADA TECNICO: "},{"kind":"field","id":"id_llamada_cliente","label":"ID LLAMADA (con cliente)","input":"text","prefix":"ID LLAMADA CLIENTE: "},{"kind":"field","id":"id_cliente","label":"ID CLIENTE","input":"textarea","prefix":"ID CLIENTE: "},{"kind":"templated","raw":"¿Todos los equipos quedaron instalados y funcionando correctamente? @@FIELD:q72_todos_los_equipos_quedaron_i@@","fieldIds":["q72_todos_los_equipos_quedaron_i"]},{"kind":"templated","raw":"¿Está de acuerdo con el cableado realizado en la instalación de sus servicios? @@FIELD:q73_est_de_acuerdo_con_el_cablea@@","fieldIds":["q73_est_de_acuerdo_con_el_cablea"]},{"kind":"templated","raw":"¿La línea telefónica funciona correctamente? @@FIELD:q74_la_l_nea_telef_nica_funciona@@","fieldIds":["q74_la_l_nea_telef_nica_funciona"]},{"kind":"templated","raw":"¿Técnico le entregó aparato telefónico? (Si aplica) @@FIELD:q75_t_cnico_le_entreg_aparato_te@@","fieldIds":["q75_t_cnico_le_entreg_aparato_te"]},{"kind":"templated","raw":"¿Se realizaron pruebas en el servicio de internet y funciona correctamente? @@FIELD:q76_se_realizaron_pruebas_en_el_@@","fieldIds":["q76_se_realizaron_pruebas_en_el_"]},{"kind":"templated","raw":"¿El técnico hizo la certificación de señal wifi en su domicilio? @@FIELD:q77_el_t_cnico_hizo_la_certifica@@","fieldIds":["q77_el_t_cnico_hizo_la_certifica"]},{"kind":"templated","raw":"¿Está de acuerdo con el servicio recibido y autoriza el cierre de la orden? @@FIELD:q78_est_de_acuerdo_con_el_servic@@","fieldIds":["q78_est_de_acuerdo_con_el_servic"]},{"kind":"codigo_hora","id":"codigo_de_prueba_2","label":"CODIGO DE PRUEBA (confirmacion con cliente)","prefix":"CODIGO DE PRUEBA: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"q72_todos_los_equipos_quedaron_i","label":"Todos los equipos quedaron instalados y funcionando correctamente","input":"select","options":["SI","NO"]},{"id":"q73_est_de_acuerdo_con_el_cablea","label":"Está de acuerdo con el cableado realizado en la instalación de sus servicios","input":"select","options":["SI","NO"]},{"id":"q74_la_l_nea_telef_nica_funciona","label":"La línea telefónica funciona correctamente","input":"select","options":["SI","NO"]},{"id":"q75_t_cnico_le_entreg_aparato_te","label":"Técnico le entregó aparato telefónico (Si aplica)","input":"select","options":["SI","NO"]},{"id":"q76_se_realizaron_pruebas_en_el_","label":"Se realizaron pruebas en el servicio de internet y funciona correctamente","input":"select","options":["SI","NO"]},{"id":"q77_el_t_cnico_hizo_la_certifica","label":"El técnico hizo la certificación de señal wifi en su domicilio","input":"select","options":["SI","NO"]},{"id":"q78_est_de_acuerdo_con_el_servic","label":"Está de acuerdo con el servicio recibido y autoriza el cierre de la orden","input":"select","options":["SI","NO"]},{"id":"cableado","label":"Cableado","input":"multiselect","options":["GRAPAS","DUCTOS","PEGADO","AEREO"]},{"id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":""},{"id":"red","label":"RED","input":"text","placeholder":""},{"id":"mano_de_obra","label":"MANO DE OBRA","input":"textarea"},{"id":"niveles","label":"NIVELES","input":"textarea"},{"id":"nombre_de_quien_confirma","label":"NOMBRE DE QUIEN CONFIRMA","input":"text","placeholder":""},{"id":"numero_al_que_confirma","label":"NUMERO AL QUE CONFIRMA","input":"text","placeholder":""},{"id":"id_cliente","label":"ID CLIENTE","input":"textarea"},{"id":"id_llamada_tecnico","label":"ID LLAMADA (con técnico)","input":"text"},{"id":"id_llamada_cliente","label":"ID LLAMADA (con cliente)","input":"text"}]},{"col":"E","label":"GPON DOBLE INTERNET Y LINEA migración","code":"MG-MJ","rows":[{"kind":"field","id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"id_llamada_tecnico","label":"ID LLAMADA (con técnico)","input":"text","prefix":"ID LLAMADA TECNICO: "},{"kind":"field","id":"red","label":"RED","input":"text","placeholder":"","prefix":"RED: "},{"kind":"field","id":"mano_de_obra","label":"MANO DE OBRA","input":"textarea","prefix":"MANO DE OBRA: "},{"kind":"field","id":"niveles","label":"NIVELES","input":"textarea","prefix":"NIVELES: "},{"kind":"field","id":"nombre_de_quien_confirma","label":"NOMBRE DE QUIEN CONFIRMA","input":"text","placeholder":"","prefix":"NOMBRE DE QUIEN CONFIRMA: "},{"kind":"field","id":"numero_al_que_confirma","label":"NUMERO AL QUE CONFIRMA","input":"text","placeholder":"","prefix":"NUMERO AL QUE CONFIRMA: "},{"kind":"templated","raw":"CABLEADO: @@FIELD:cableado@@","fieldIds":["cableado"]},{"kind":"codigo_hora","id":"codigo_de_prueba","label":"CODIGO DE PRUEBA","prefix":"CODIGO DE PRUEBA: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"},{"kind":"blank"},{"kind":"blank"},{"kind":"static","text":"**CONFIRMACION CON CLIENTE**"},{"kind":"static","text":"*_*"},{"kind":"echo","refId":"id_tecnico","prefix":"ID TECNICO: "},{"kind":"echo","refId":"id_llamada_tecnico","prefix":"ID LLAMADA TECNICO: "},{"kind":"field","id":"id_llamada_cliente","label":"ID LLAMADA (con cliente)","input":"text","prefix":"ID LLAMADA CLIENTE: "},{"kind":"field","id":"id_cliente","label":"ID CLIENTE","input":"textarea","prefix":"ID CLIENTE: "},{"kind":"templated","raw":"¿Todos los equipos quedaron instalados y funcionando correctamente? @@FIELD:q79_todos_los_equipos_quedaron_i@@","fieldIds":["q79_todos_los_equipos_quedaron_i"]},{"kind":"templated","raw":"¿Está de acuerdo con el cableado realizado en la instalación de sus servicios? @@FIELD:q80_est_de_acuerdo_con_el_cablea@@","fieldIds":["q80_est_de_acuerdo_con_el_cablea"]},{"kind":"templated","raw":"¿La línea telefónica funciona correctamente? @@FIELD:q81_la_l_nea_telef_nica_funciona@@","fieldIds":["q81_la_l_nea_telef_nica_funciona"]},{"kind":"templated","raw":"¿Técnico le entregó aparato telefónico? (Si aplica) @@FIELD:q82_t_cnico_le_entreg_aparato_te@@","fieldIds":["q82_t_cnico_le_entreg_aparato_te"]},{"kind":"templated","raw":"¿Se realizaron pruebas en el servicio de internet y funciona correctamente? @@FIELD:q83_se_realizaron_pruebas_en_el_@@","fieldIds":["q83_se_realizaron_pruebas_en_el_"]},{"kind":"templated","raw":"¿El técnico hizo la certificación de señal wifi en su domicilio? @@FIELD:q84_el_t_cnico_hizo_la_certifica@@","fieldIds":["q84_el_t_cnico_hizo_la_certifica"]},{"kind":"templated","raw":"¿Está de acuerdo con el servicio recibido y autoriza el cierre de la orden? @@FIELD:q85_est_de_acuerdo_con_el_servic@@","fieldIds":["q85_est_de_acuerdo_con_el_servic"]},{"kind":"codigo_hora","id":"codigo_de_prueba_2","label":"CODIGO DE PRUEBA (confirmacion con cliente)","prefix":"CODIGO DE PRUEBA: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"},{"kind":"blank"},{"kind":"static","text":"----------------------------------------------------------"},{"kind":"field","id":"retiro_de_equipos","label":"RETIRO DE EQUIPOS","input":"text","placeholder":"","prefix":"RETIRO DE EQUIPOS: "},{"kind":"field","id":"cantidad_equipos","label":"CANTIDAD EQUIPOS","input":"text","placeholder":"","prefix":"CANTIDAD EQUIPOS: "},{"kind":"field","id":"retiro_de_cableado_interno_c","label":"RETIRO DE CABLEADO INTERNO COMPLETO","input":"text","placeholder":"","prefix":"RETIRO DE CABLEADO INTERNO COMPLETO: "},{"kind":"codigo_hora","id":"codigo_de_prueba_3","label":"CODIGO DE PRUEBA (confirmacion con cliente)","prefix":"CODIGO DE PRUEBA: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"q79_todos_los_equipos_quedaron_i","label":"Todos los equipos quedaron instalados y funcionando correctamente","input":"select","options":["SI","NO"]},{"id":"q80_est_de_acuerdo_con_el_cablea","label":"Está de acuerdo con el cableado realizado en la instalación de sus servicios","input":"select","options":["SI","NO"]},{"id":"q81_la_l_nea_telef_nica_funciona","label":"La línea telefónica funciona correctamente","input":"select","options":["SI","NO"]},{"id":"q82_t_cnico_le_entreg_aparato_te","label":"Técnico le entregó aparato telefónico (Si aplica)","input":"select","options":["SI","NO"]},{"id":"q83_se_realizaron_pruebas_en_el_","label":"Se realizaron pruebas en el servicio de internet y funciona correctamente","input":"select","options":["SI","NO"]},{"id":"q84_el_t_cnico_hizo_la_certifica","label":"El técnico hizo la certificación de señal wifi en su domicilio","input":"select","options":["SI","NO"]},{"id":"q85_est_de_acuerdo_con_el_servic","label":"Está de acuerdo con el servicio recibido y autoriza el cierre de la orden","input":"select","options":["SI","NO"]},{"id":"cableado","label":"Cableado","input":"multiselect","options":["GRAPAS","DUCTOS","PEGADO","AEREO"]},{"id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":""},{"id":"red","label":"RED","input":"text","placeholder":""},{"id":"mano_de_obra","label":"MANO DE OBRA","input":"textarea"},{"id":"niveles","label":"NIVELES","input":"textarea"},{"id":"nombre_de_quien_confirma","label":"NOMBRE DE QUIEN CONFIRMA","input":"text","placeholder":""},{"id":"numero_al_que_confirma","label":"NUMERO AL QUE CONFIRMA","input":"text","placeholder":""},{"id":"id_cliente","label":"ID CLIENTE","input":"textarea"},{"id":"retiro_de_equipos","label":"RETIRO DE EQUIPOS","input":"text","placeholder":""},{"id":"cantidad_equipos","label":"CANTIDAD EQUIPOS","input":"text","placeholder":""},{"id":"retiro_de_cableado_interno_c","label":"RETIRO DE CABLEADO INTERNO COMPLETO","input":"text","placeholder":""},{"id":"id_llamada_tecnico","label":"ID LLAMADA (con técnico)","input":"text"},{"id":"id_llamada_cliente","label":"ID LLAMADA (con cliente)","input":"text"}]},{"col":"F","label":"SOLO TV","code":"MS-DS-CS","rows":[{"kind":"field","id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"id_llamada_tecnico","label":"ID LLAMADA (con técnico)","input":"text","prefix":"ID LLAMADA TECNICO: "},{"kind":"field","id":"mano_de_obra","label":"MANO DE OBRA","input":"textarea","prefix":"MANO DE OBRA: "},{"kind":"field","id":"nombre_de_quien_confirma","label":"NOMBRE DE QUIEN CONFIRMA","input":"text","placeholder":"","prefix":"NOMBRE DE QUIEN CONFIRMA: "},{"kind":"field","id":"numero_al_que_confirma","label":"NUMERO AL QUE CONFIRMA","input":"text","placeholder":"","prefix":"NUMERO AL QUE CONFIRMA: "},{"kind":"templated","raw":"CABLEADO: @@FIELD:cableado@@","fieldIds":["cableado"]},{"kind":"field","id":"tvs_insta","label":"TVS INSTA","input":"text","placeholder":"","prefix":"TVS INSTA: "},{"kind":"codigo_hora","id":"codigo_de_prueba","label":"CODIGO DE PRUEBA","prefix":"CODIGO DE PRUEBA: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"},{"kind":"blank"},{"kind":"blank"},{"kind":"static","text":"**CONFIRMACION CON CLIENTE**"},{"kind":"static","text":"*_*"},{"kind":"echo","refId":"id_tecnico","prefix":"ID TECNICO: "},{"kind":"echo","refId":"id_llamada_tecnico","prefix":"ID LLAMADA TECNICO: "},{"kind":"field","id":"id_llamada_cliente","label":"ID LLAMADA (con cliente)","input":"text","prefix":"ID LLAMADA CLIENTE: "},{"kind":"field","id":"id_cliente","label":"ID CLIENTE","input":"textarea","prefix":"ID CLIENTE: "},{"kind":"templated","raw":"¿Todos los equipos quedaron instalados y funcionando correctamente? @@FIELD:q86_todos_los_equipos_quedaron_i@@","fieldIds":["q86_todos_los_equipos_quedaron_i"]},{"kind":"templated","raw":"¿Está de acuerdo con el cableado realizado en la instalación de sus servicios? @@FIELD:q87_est_de_acuerdo_con_el_cablea@@","fieldIds":["q87_est_de_acuerdo_con_el_cablea"]},{"kind":"templated","raw":"¿Todos los televisores quedaron conectados, cableados y en funcionamiento? @@FIELD:q88_todos_los_televisores_quedar@@","fieldIds":["q88_todos_los_televisores_quedar"]},{"kind":"templated","raw":"¿Le realizaron la entrega del control remoto para cada uno de los televisores? @@FIELD:q89_le_realizaron_la_entrega_del@@","fieldIds":["q89_le_realizaron_la_entrega_del"]},{"kind":"templated","raw":"¿Está de acuerdo con el servicio recibido y autoriza el cierre de la orden? @@FIELD:q90_est_de_acuerdo_con_el_servic@@","fieldIds":["q90_est_de_acuerdo_con_el_servic"]},{"kind":"codigo_hora","id":"codigo_de_prueba_2","label":"CODIGO DE PRUEBA (confirmacion con cliente)","prefix":"CODIGO DE PRUEBA: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"q86_todos_los_equipos_quedaron_i","label":"Todos los equipos quedaron instalados y funcionando correctamente","input":"select","options":["SI","NO"]},{"id":"q87_est_de_acuerdo_con_el_cablea","label":"Está de acuerdo con el cableado realizado en la instalación de sus servicios","input":"select","options":["SI","NO"]},{"id":"q88_todos_los_televisores_quedar","label":"Todos los televisores quedaron conectados, cableados y en funcionamiento","input":"select","options":["SI","NO"]},{"id":"q89_le_realizaron_la_entrega_del","label":"Le realizaron la entrega del control remoto para cada uno de los televisores","input":"select","options":["SI","NO"]},{"id":"q90_est_de_acuerdo_con_el_servic","label":"Está de acuerdo con el servicio recibido y autoriza el cierre de la orden","input":"select","options":["SI","NO"]},{"id":"cableado","label":"Cableado","input":"multiselect","options":["GRAPAS","DUCTOS","PEGADO","AEREO"]},{"id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":""},{"id":"mano_de_obra","label":"MANO DE OBRA","input":"textarea"},{"id":"nombre_de_quien_confirma","label":"NOMBRE DE QUIEN CONFIRMA","input":"text","placeholder":""},{"id":"numero_al_que_confirma","label":"NUMERO AL QUE CONFIRMA","input":"text","placeholder":""},{"id":"tvs_insta","label":"TVS INSTA","input":"text","placeholder":""},{"id":"id_cliente","label":"ID CLIENTE","input":"textarea"},{"id":"id_llamada_tecnico","label":"ID LLAMADA (con técnico)","input":"text"},{"id":"id_llamada_cliente","label":"ID LLAMADA (con cliente)","input":"text"}]},{"col":"G","label":"DQ TIPO DE SERVICIO GI","code":"DQ - GQ","rows":[{"kind":"field","id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"id_llamada_tecnico","label":"ID LLAMADA (con técnico)","input":"text","prefix":"ID LLAMADA TECNICO: "},{"kind":"field","id":"red","label":"RED","input":"text","placeholder":"","prefix":"RED: "},{"kind":"field","id":"mano_de_obra","label":"MANO DE OBRA","input":"textarea","prefix":"MANO DE OBRA: "},{"kind":"field","id":"niveles","label":"NIVELES","input":"textarea","prefix":"NIVELES: "},{"kind":"field","id":"nombre_de_quien_confirma","label":"NOMBRE DE QUIEN CONFIRMA","input":"text","placeholder":"","prefix":"NOMBRE DE QUIEN CONFIRMA: "},{"kind":"field","id":"numero_al_que_confirma","label":"NUMERO AL QUE CONFIRMA","input":"text","placeholder":"","prefix":"NUMERO AL QUE CONFIRMA: "},{"kind":"templated","raw":"CABLEADO: @@FIELD:cableado@@","fieldIds":["cableado"]},{"kind":"field","id":"tvs_insta","label":"TVS INSTA","input":"text","placeholder":"","prefix":"TVS INSTA: "},{"kind":"codigo_hora","id":"codigo_de_prueba","label":"CODIGO DE PRUEBA","prefix":"CODIGO DE PRUEBA: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"},{"kind":"blank"},{"kind":"blank"},{"kind":"static","text":"**CONFIRMACION CON CLIENTE**"},{"kind":"static","text":"*_*"},{"kind":"echo","refId":"id_tecnico","prefix":"ID TECNICO: "},{"kind":"echo","refId":"id_llamada_tecnico","prefix":"ID LLAMADA TECNICO: "},{"kind":"field","id":"id_llamada_cliente","label":"ID LLAMADA (con cliente)","input":"text","prefix":"ID LLAMADA CLIENTE: "},{"kind":"field","id":"id_cliente","label":"ID CLIENTE","input":"textarea","prefix":"ID CLIENTE: "},{"kind":"templated","raw":"¿Todos los equipos quedaron instalados y funcionando correctamente? @@FIELD:q91_todos_los_equipos_quedaron_i@@","fieldIds":["q91_todos_los_equipos_quedaron_i"]},{"kind":"templated","raw":"¿Está de acuerdo con el cableado realizado en la instalación de sus servicios? @@FIELD:q92_est_de_acuerdo_con_el_cablea@@","fieldIds":["q92_est_de_acuerdo_con_el_cablea"]},{"kind":"templated","raw":"¿La línea telefónica funciona correctamente? @@FIELD:q93_la_l_nea_telef_nica_funciona@@","fieldIds":["q93_la_l_nea_telef_nica_funciona"]},{"kind":"templated","raw":"¿Técnico le entregó aparato telefónico? (Si aplica) @@FIELD:q94_t_cnico_le_entreg_aparato_te@@","fieldIds":["q94_t_cnico_le_entreg_aparato_te"]},{"kind":"templated","raw":"¿Se realizaron pruebas en el servicio de internet y funciona correctamente? @@FIELD:q95_se_realizaron_pruebas_en_el_@@","fieldIds":["q95_se_realizaron_pruebas_en_el_"]},{"kind":"templated","raw":"¿Todos los televisores quedaron conectados, cableados y en funcionamiento? @@FIELD:q96_todos_los_televisores_quedar@@","fieldIds":["q96_todos_los_televisores_quedar"]},{"kind":"templated","raw":"¿Está de acuerdo con el servicio recibido y autoriza el cierre de la orden? @@FIELD:q97_est_de_acuerdo_con_el_servic@@","fieldIds":["q97_est_de_acuerdo_con_el_servic"]},{"kind":"codigo_hora","id":"codigo_de_prueba_2","label":"CODIGO DE PRUEBA (confirmacion con cliente)","prefix":"CODIGO DE PRUEBA: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"q91_todos_los_equipos_quedaron_i","label":"Todos los equipos quedaron instalados y funcionando correctamente","input":"select","options":["SI","NO"]},{"id":"q92_est_de_acuerdo_con_el_cablea","label":"Está de acuerdo con el cableado realizado en la instalación de sus servicios","input":"select","options":["SI","NO"]},{"id":"q93_la_l_nea_telef_nica_funciona","label":"La línea telefónica funciona correctamente","input":"select","options":["SI","NO"]},{"id":"q94_t_cnico_le_entreg_aparato_te","label":"Técnico le entregó aparato telefónico (Si aplica)","input":"select","options":["SI","NO"]},{"id":"q95_se_realizaron_pruebas_en_el_","label":"Se realizaron pruebas en el servicio de internet y funciona correctamente","input":"select","options":["SI","NO"]},{"id":"q96_todos_los_televisores_quedar","label":"Todos los televisores quedaron conectados, cableados y en funcionamiento","input":"select","options":["SI","NO"]},{"id":"q97_est_de_acuerdo_con_el_servic","label":"Está de acuerdo con el servicio recibido y autoriza el cierre de la orden","input":"select","options":["SI","NO"]},{"id":"cableado","label":"Cableado","input":"multiselect","options":["GRAPAS","DUCTOS","PEGADO","AEREO"]},{"id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":""},{"id":"red","label":"RED","input":"text","placeholder":""},{"id":"mano_de_obra","label":"MANO DE OBRA","input":"textarea"},{"id":"niveles","label":"NIVELES","input":"textarea"},{"id":"nombre_de_quien_confirma","label":"NOMBRE DE QUIEN CONFIRMA","input":"text","placeholder":""},{"id":"numero_al_que_confirma","label":"NUMERO AL QUE CONFIRMA","input":"text","placeholder":""},{"id":"tvs_insta","label":"TVS INSTA","input":"text","placeholder":""},{"id":"id_cliente","label":"ID CLIENTE","input":"textarea"},{"id":"id_llamada_tecnico","label":"ID LLAMADA (con técnico)","input":"text"},{"id":"id_llamada_cliente","label":"ID LLAMADA (con cliente)","input":"text"}]},{"col":"H","label":"CAMBIO DE EQUIPO ONT","code":"CH","rows":[{"kind":"field","id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"id_llamada_tecnico","label":"ID LLAMADA (con técnico)","input":"text","prefix":"ID LLAMADA TECNICO: "},{"kind":"field","id":"red","label":"RED","input":"text","placeholder":"","prefix":"RED: "},{"kind":"field","id":"mano_de_obra","label":"MANO DE OBRA","input":"textarea","prefix":"MANO DE OBRA: "},{"kind":"field","id":"niveles","label":"NIVELES","input":"textarea","prefix":"NIVELES: "},{"kind":"field","id":"nombre_de_quien_confirma","label":"NOMBRE DE QUIEN CONFIRMA","input":"text","placeholder":"","prefix":"NOMBRE DE QUIEN CONFIRMA: "},{"kind":"field","id":"numero_al_que_confirma","label":"NUMERO AL QUE CONFIRMA","input":"text","placeholder":"","prefix":"NUMERO AL QUE CONFIRMA: "},{"kind":"templated","raw":"CABLEADO: @@FIELD:cableado@@","fieldIds":["cableado"]},{"kind":"codigo_hora","id":"codigo_de_prueba","label":"CODIGO DE PRUEBA","prefix":"CODIGO DE PRUEBA: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"},{"kind":"blank"},{"kind":"blank"},{"kind":"static","text":"**CONFIRMACION CON CLIENTE**"},{"kind":"static","text":"*_*"},{"kind":"echo","refId":"id_tecnico","prefix":"ID TECNICO: "},{"kind":"echo","refId":"id_llamada_tecnico","prefix":"ID LLAMADA TECNICO: "},{"kind":"field","id":"id_llamada_cliente","label":"ID LLAMADA (con cliente)","input":"text","prefix":"ID LLAMADA CLIENTE: "},{"kind":"field","id":"id_cliente","label":"ID CLIENTE","input":"textarea","prefix":"ID CLIENTE: "},{"kind":"templated","raw":"¿Todos los equipos quedaron instalados y funcionando correctamente? @@FIELD:q98_todos_los_equipos_quedaron_i@@","fieldIds":["q98_todos_los_equipos_quedaron_i"]},{"kind":"templated","raw":"¿Está de acuerdo con el cableado realizado en la instalación de sus servicios? @@FIELD:q99_est_de_acuerdo_con_el_cablea@@","fieldIds":["q99_est_de_acuerdo_con_el_cablea"]},{"kind":"templated","raw":"¿La línea telefónica funciona correctamente? @@FIELD:q100_la_l_nea_telef_nica_funciona@@","fieldIds":["q100_la_l_nea_telef_nica_funciona"]},{"kind":"templated","raw":"¿Técnico le entregó aparato telefónico? (Si aplica) @@FIELD:q101_t_cnico_le_entreg_aparato_te@@","fieldIds":["q101_t_cnico_le_entreg_aparato_te"]},{"kind":"templated","raw":"¿Se realizaron pruebas en el servicio de internet y funciona correctamente? @@FIELD:q102_se_realizaron_pruebas_en_el_@@","fieldIds":["q102_se_realizaron_pruebas_en_el_"]},{"kind":"templated","raw":"¿El técnico hizo la certificación de señal wifi en su domicilio? @@FIELD:q103_el_t_cnico_hizo_la_certifica@@","fieldIds":["q103_el_t_cnico_hizo_la_certifica"]},{"kind":"templated","raw":"¿Está de acuerdo con el servicio recibido y autoriza el cierre de la orden? @@FIELD:q104_est_de_acuerdo_con_el_servic@@","fieldIds":["q104_est_de_acuerdo_con_el_servic"]},{"kind":"codigo_hora","id":"codigo_de_prueba_2","label":"CODIGO DE PRUEBA (confirmacion con cliente)","prefix":"CODIGO DE PRUEBA: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"q98_todos_los_equipos_quedaron_i","label":"Todos los equipos quedaron instalados y funcionando correctamente","input":"select","options":["SI","NO"]},{"id":"q99_est_de_acuerdo_con_el_cablea","label":"Está de acuerdo con el cableado realizado en la instalación de sus servicios","input":"select","options":["SI","NO"]},{"id":"q100_la_l_nea_telef_nica_funciona","label":"La línea telefónica funciona correctamente","input":"select","options":["SI","NO"]},{"id":"q101_t_cnico_le_entreg_aparato_te","label":"Técnico le entregó aparato telefónico (Si aplica)","input":"select","options":["SI","NO"]},{"id":"q102_se_realizaron_pruebas_en_el_","label":"Se realizaron pruebas en el servicio de internet y funciona correctamente","input":"select","options":["SI","NO"]},{"id":"q103_el_t_cnico_hizo_la_certifica","label":"El técnico hizo la certificación de señal wifi en su domicilio","input":"select","options":["SI","NO"]},{"id":"q104_est_de_acuerdo_con_el_servic","label":"Está de acuerdo con el servicio recibido y autoriza el cierre de la orden","input":"select","options":["SI","NO"]},{"id":"cableado","label":"Cableado","input":"multiselect","options":["GRAPAS","DUCTOS","PEGADO","AEREO"]},{"id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":""},{"id":"red","label":"RED","input":"text","placeholder":""},{"id":"mano_de_obra","label":"MANO DE OBRA","input":"textarea"},{"id":"niveles","label":"NIVELES","input":"textarea"},{"id":"nombre_de_quien_confirma","label":"NOMBRE DE QUIEN CONFIRMA","input":"text","placeholder":""},{"id":"numero_al_que_confirma","label":"NUMERO AL QUE CONFIRMA","input":"text","placeholder":""},{"id":"id_cliente","label":"ID CLIENTE","input":"textarea"},{"id":"id_llamada_tecnico","label":"ID LLAMADA (con técnico)","input":"text"},{"id":"id_llamada_cliente","label":"ID LLAMADA (con cliente)","input":"text"}]},{"col":"I","label":"REPETIDORES","code":"CG","rows":[{"kind":"field","id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"id_llamada_tecnico","label":"ID LLAMADA (con técnico)","input":"text","prefix":"ID LLAMADA TECNICO: "},{"kind":"field","id":"mano_de_obra","label":"MANO DE OBRA","input":"textarea","prefix":"MANO DE OBRA: "},{"kind":"field","id":"nombre_de_quien_confirma","label":"NOMBRE DE QUIEN CONFIRMA","input":"text","placeholder":"","prefix":"NOMBRE DE QUIEN CONFIRMA: "},{"kind":"field","id":"numero_al_que_confirma","label":"NUMERO AL QUE CONFIRMA","input":"text","placeholder":"","prefix":"NUMERO AL QUE CONFIRMA: "},{"kind":"templated","raw":"CABLEADO: @@FIELD:cableado@@","fieldIds":["cableado"]},{"kind":"codigo_hora","id":"codigo_de_prueba","label":"CODIGO DE PRUEBA","prefix":"CODIGO DE PRUEBA: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"},{"kind":"blank"},{"kind":"blank"},{"kind":"static","text":"**CONFIRMACION CON CLIENTE**"},{"kind":"static","text":"*_*"},{"kind":"echo","refId":"id_tecnico","prefix":"ID TECNICO: "},{"kind":"echo","refId":"id_llamada_tecnico","prefix":"ID LLAMADA TECNICO: "},{"kind":"field","id":"id_llamada_cliente","label":"ID LLAMADA (con cliente)","input":"text","prefix":"ID LLAMADA CLIENTE: "},{"kind":"field","id":"id_cliente","label":"ID CLIENTE","input":"textarea","prefix":"ID CLIENTE: "},{"kind":"templated","raw":"¿Todos los equipos quedaron instalados y funcionando correctamente? @@FIELD:q105_todos_los_equipos_quedaron_i@@","fieldIds":["q105_todos_los_equipos_quedaron_i"]},{"kind":"templated","raw":"¿Está de acuerdo con el cableado realizado en la instalación de sus servicios? @@FIELD:q106_est_de_acuerdo_con_el_cablea@@","fieldIds":["q106_est_de_acuerdo_con_el_cablea"]},{"kind":"templated","raw":"¿Se realizaron pruebas en el servicio de internet y funciona correctamente? @@FIELD:q107_se_realizaron_pruebas_en_el_@@","fieldIds":["q107_se_realizaron_pruebas_en_el_"]},{"kind":"templated","raw":"¿El técnico hizo la certificación de señal wifi en su domicilio? @@FIELD:q108_el_t_cnico_hizo_la_certifica@@","fieldIds":["q108_el_t_cnico_hizo_la_certifica"]},{"kind":"templated","raw":"¿Está de acuerdo con el servicio recibido y autoriza el cierre de la orden? @@FIELD:q109_est_de_acuerdo_con_el_servic@@","fieldIds":["q109_est_de_acuerdo_con_el_servic"]},{"kind":"codigo_hora","id":"codigo_de_prueba_2","label":"CODIGO DE PRUEBA (confirmacion con cliente)","prefix":"CODIGO DE PRUEBA: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"q105_todos_los_equipos_quedaron_i","label":"Todos los equipos quedaron instalados y funcionando correctamente","input":"select","options":["SI","NO"]},{"id":"q106_est_de_acuerdo_con_el_cablea","label":"Está de acuerdo con el cableado realizado en la instalación de sus servicios","input":"select","options":["SI","NO"]},{"id":"q107_se_realizaron_pruebas_en_el_","label":"Se realizaron pruebas en el servicio de internet y funciona correctamente","input":"select","options":["SI","NO"]},{"id":"q108_el_t_cnico_hizo_la_certifica","label":"El técnico hizo la certificación de señal wifi en su domicilio","input":"select","options":["SI","NO"]},{"id":"q109_est_de_acuerdo_con_el_servic","label":"Está de acuerdo con el servicio recibido y autoriza el cierre de la orden","input":"select","options":["SI","NO"]},{"id":"cableado","label":"Cableado","input":"multiselect","options":["GRAPAS","DUCTOS","PEGADO","AEREO"]},{"id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":""},{"id":"mano_de_obra","label":"MANO DE OBRA","input":"textarea"},{"id":"nombre_de_quien_confirma","label":"NOMBRE DE QUIEN CONFIRMA","input":"text","placeholder":""},{"id":"numero_al_que_confirma","label":"NUMERO AL QUE CONFIRMA","input":"text","placeholder":""},{"id":"id_cliente","label":"ID CLIENTE","input":"textarea"},{"id":"id_llamada_tecnico","label":"ID LLAMADA (con técnico)","input":"text"},{"id":"id_llamada_cliente","label":"ID LLAMADA (con cliente)","input":"text"}]}]},"DTH":{"ACTIVACION":[{"col":"B","label":"ACTIVACION","code":"DA-DH-DL-DM-MS-DS-IT","rows":[{"kind":"blank"},{"kind":"field","id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"id_llamada","label":"ID LLAMADA","input":"text","placeholder":"","prefix":"ID LLAMADA: "},{"kind":"tvgroup","groupId":"tv_serie_smartcard_1","label":"SERIE/SMARTCARD","prefix":"SERIE/SMARTCARD: ","max":4},{"kind":"blank"},{"kind":"static","text":"Coordenadas DTH"},{"kind":"field","id":"lat_dms","label":"Latitud","input":"coord_dms","suffix":"N","default":"00°00'00.00\"N","prefix":""},{"kind":"field","id":"lon_dms","label":"Longitud","input":"coord_dms","suffix":"O","default":"00°00'00.00\"O","prefix":""},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":""},{"id":"id_llamada","label":"ID LLAMADA","input":"text","placeholder":""},{"id":"lat_dms","label":"Latitud","input":"coord_dms","suffix":"N","default":"00°00'00.00\"N"},{"id":"lon_dms","label":"Longitud","input":"coord_dms","suffix":"O","default":"00°00'00.00\"O"}]},{"col":"C","label":"ACTIVACION","code":"DA CON WTTH","rows":[{"kind":"field","id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"id_llamada","label":"ID LLAMADA","input":"text","placeholder":"","prefix":"ID LLAMADA: "},{"kind":"tvgroup","groupId":"tv_serie_smartcard_1","label":"SERIE/SMARTCARD","prefix":"SERIE/SMARTCARD: ","max":4},{"kind":"static","text":"**Coordenadas DTH**"},{"kind":"field","id":"lat_dms","label":"Latitud","input":"coord_dms","suffix":"N","default":"00°00'00.00\"N","prefix":""},{"kind":"field","id":"lon_dms","label":"Longitud","input":"coord_dms","suffix":"O","default":"00°00'00.00\"O","prefix":""},{"kind":"static","text":"**Coordenadas WTTH**"},{"kind":"blank"},{"kind":"field","id":"coord1_dec","label":"Coordenada 1 (Latitud, decimal)","input":"text","placeholder":"14.1245.25","prefix":""},{"kind":"field","id":"coord2_dec","label":"Coordenada 2 (Longitud, decimal)","input":"text","placeholder":"-14.1234.12","prefix":""},{"kind":"blank"},{"kind":"field","id":"token","label":"TOKEN","input":"text","placeholder":"","prefix":"TOKEN: "},{"kind":"templated","raw":"COBERTURA: @@FIELD:cobertura@@","fieldIds":["cobertura"]},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"cobertura","label":"Cobertura","input":"select","options":["SI","NO"],"default":"SI"},{"id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":""},{"id":"id_llamada","label":"ID LLAMADA","input":"text","placeholder":""},{"id":"lat_dms","label":"Latitud","input":"coord_dms","suffix":"N","default":"00°00'00.00\"N"},{"id":"lon_dms","label":"Longitud","input":"coord_dms","suffix":"O","default":"00°00'00.00\"O"},{"id":"token","label":"TOKEN","input":"text","placeholder":""},{"id":"coord1_dec","label":"Coordenada 1 (Latitud, decimal)","input":"text","placeholder":"14.1245.25","prefix":""},{"id":"coord2_dec","label":"Coordenada 2 (Longitud, decimal)","input":"text","placeholder":"-14.1234.12","prefix":""}]},{"col":"D","label":"ACTIVACION","code":"WTTH","rows":[{"kind":"field","id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"id_llamada","label":"ID LLAMADA","input":"text","placeholder":"","prefix":"ID LLAMADA: "},{"kind":"field","id":"idu","label":"IDU","input":"text","placeholder":"","prefix":"IDU: "},{"kind":"field","id":"odu","label":"ODU","input":"text","placeholder":"","prefix":"ODU: "},{"kind":"field","id":"rsrp","label":"RSRP","input":"text","placeholder":"-  DB","prefix":"RSRP: "},{"kind":"field","id":"rsrq","label":"RSRQ","input":"text","placeholder":"-  DB","prefix":"RSRQ: "},{"kind":"field","id":"sinr","label":"SINR","input":"text","placeholder":"+  DB","prefix":"SINR: "},{"kind":"static","text":"**Coordenadas WTTH Decimales**"},{"kind":"blank"},{"kind":"field","id":"coord1_dec","label":"Coordenada 1 (Latitud, decimal)","input":"text","placeholder":"14.1245.25","prefix":""},{"kind":"field","id":"coord2_dec","label":"Coordenada 2 (Longitud, decimal)","input":"text","placeholder":"-14.1234.12","prefix":""},{"kind":"blank"},{"kind":"field","id":"sim","label":"SIM","input":"text","placeholder":"","prefix":"SIM: "},{"kind":"field","id":"cpe","label":"CPE","input":"text","placeholder":"","prefix":"CPE: "},{"kind":"field","id":"token","label":"TOKEN","input":"text","placeholder":"","prefix":"TOKEN: "},{"kind":"templated","raw":"COBERTURA: @@FIELD:cobertura@@","fieldIds":["cobertura"]},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"cobertura","label":"Cobertura","input":"select","options":["SI","NO"],"default":"SI"},{"id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":""},{"id":"id_llamada","label":"ID LLAMADA","input":"text","placeholder":""},{"id":"idu","label":"IDU","input":"text","placeholder":""},{"id":"odu","label":"ODU","input":"text","placeholder":""},{"id":"rsrp","label":"RSRP","input":"text","placeholder":"-  DB"},{"id":"rsrq","label":"RSRQ","input":"text","placeholder":"-  DB"},{"id":"sinr","label":"SINR","input":"text","placeholder":"+  DB"},{"id":"sim","label":"SIM","input":"text","placeholder":""},{"id":"cpe","label":"CPE","input":"text","placeholder":""},{"id":"token","label":"TOKEN","input":"text","placeholder":""},{"id":"coord1_dec","label":"Coordenada 1 (Latitud, decimal)","input":"text","placeholder":"14.1245.25","prefix":""},{"id":"coord2_dec","label":"Coordenada 2 (Longitud, decimal)","input":"text","placeholder":"-14.1234.12","prefix":""}]},{"col":"E","label":"CAMBIO DE EQUIPO","code":"DD-CD","rows":[{"kind":"field","id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"id_llamada","label":"ID LLAMADA","input":"text","placeholder":"","prefix":"ID LLAMADA: "},{"kind":"static","text":"**CAMBIO DE STB DTH**"},{"kind":"static","text":"--EQUIPO A INSTALAR--"},{"kind":"field","id":"serie","label":"SERIE (equipo a instalar)","input":"text","placeholder":"","prefix":"SERIE: "},{"kind":"field","id":"smartcard","label":"SMARTCARD (equipo a instalar)","input":"text","placeholder":"","prefix":"SMARTCARD: "},{"kind":"static","text":"--EQUIPO A RETIRAR--"},{"kind":"field","id":"serie_2","label":"SERIE (equipo a retirar)","input":"text","placeholder":"","prefix":"SERIE: "},{"kind":"field","id":"smartcard_2","label":"SMARTCARD (equipo a retirar)","input":"text","placeholder":"","prefix":"SMARTCARD: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":""},{"id":"id_llamada","label":"ID LLAMADA","input":"text","placeholder":""},{"id":"serie","label":"SERIE (equipo a instalar)","input":"text","placeholder":""},{"id":"smartcard","label":"SMARTCARD (equipo a instalar)","input":"text","placeholder":""},{"id":"serie_2","label":"SERIE (equipo a retirar)","input":"text","placeholder":""},{"id":"smartcard_2","label":"SMARTCARD (equipo a retirar)","input":"text","placeholder":""}]}],"CONFIRMACION":[{"col":"B","label":"CIERRE","code":"DA-DH-DM-MS-DS-DD-CD","rows":[{"kind":"field","id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"mano_de_obra","label":"MANO DE OBRA","input":"textarea","prefix":"MANO DE OBRA: "},{"kind":"field","id":"coordenadas","label":"COORDENADAS","input":"text","placeholder":"","prefix":"COORDENADAS: "},{"kind":"field","id":"nombre_de_quien_confirma","label":"NOMBRE DE QUIEN CONFIRMA","input":"text","placeholder":"","prefix":"NOMBRE DE QUIEN CONFIRMA: "},{"kind":"field","id":"numero_al_que_confirma","label":"NUMERO AL QUE CONFIRMA","input":"text","placeholder":"","prefix":"NUMERO AL QUE CONFIRMA: "},{"kind":"templated","raw":"CABLEADO: @@FIELD:cableado@@","fieldIds":["cableado"]},{"kind":"field","id":"cantidad_tv","label":"CANTIDAD TV","input":"text","placeholder":"","prefix":"CANTIDAD TV: "},{"kind":"codigo_hora","id":"codigo_de_prueba","label":"CODIGO DE PRUEBA","prefix":"CODIGO DE PRUEBA: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"},{"kind":"blank"},{"kind":"blank"},{"kind":"static","text":"**CONFIRMACION CON CLIENTE**"},{"kind":"static","text":"*_*"},{"kind":"field","id":"id_tecnico_2","label":"ID TECNICO (confirmacion con cliente)","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"id_cliente","label":"ID CLIENTE","input":"textarea","prefix":"ID CLIENTE: "},{"kind":"templated","raw":"¿Todos los equipos quedaron instalados y funcionando correctamente? @@FIELD:q110_todos_los_equipos_quedaron_i@@","fieldIds":["q110_todos_los_equipos_quedaron_i"]},{"kind":"templated","raw":"¿Está de acuerdo con el cableado realizado en la instalación de sus servicios? @@FIELD:q111_est_de_acuerdo_con_el_cablea@@","fieldIds":["q111_est_de_acuerdo_con_el_cablea"]},{"kind":"templated","raw":"¿Todos los televisores quedaron conectados, cableados y en funcionamiento? @@FIELD:q112_todos_los_televisores_quedar@@","fieldIds":["q112_todos_los_televisores_quedar"]},{"kind":"templated","raw":"¿Le realizaron la entrega del control remoto para cada uno de los televisores? @@FIELD:q113_le_realizaron_la_entrega_del@@","fieldIds":["q113_le_realizaron_la_entrega_del"]},{"kind":"templated","raw":"¿Está de acuerdo con el servicio recibido y autoriza el cierre de la orden? @@FIELD:q114_est_de_acuerdo_con_el_servic@@","fieldIds":["q114_est_de_acuerdo_con_el_servic"]},{"kind":"codigo_hora","id":"codigo_de_prueba_2","label":"CODIGO DE PRUEBA (confirmacion con cliente)","prefix":"CODIGO DE PRUEBA: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"q110_todos_los_equipos_quedaron_i","label":"Todos los equipos quedaron instalados y funcionando correctamente","input":"select","options":["SI","NO"]},{"id":"q111_est_de_acuerdo_con_el_cablea","label":"Está de acuerdo con el cableado realizado en la instalación de sus servicios","input":"select","options":["SI","NO"]},{"id":"q112_todos_los_televisores_quedar","label":"Todos los televisores quedaron conectados, cableados y en funcionamiento","input":"select","options":["SI","NO"]},{"id":"q113_le_realizaron_la_entrega_del","label":"Le realizaron la entrega del control remoto para cada uno de los televisores","input":"select","options":["SI","NO"]},{"id":"q114_est_de_acuerdo_con_el_servic","label":"Está de acuerdo con el servicio recibido y autoriza el cierre de la orden","input":"select","options":["SI","NO"]},{"id":"cableado","label":"Cableado","input":"multiselect","options":["GRAPAS","DUCTOS","PEGADO","AEREO"]},{"id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":""},{"id":"mano_de_obra","label":"MANO DE OBRA","input":"textarea"},{"id":"coordenadas","label":"COORDENADAS","input":"text","placeholder":""},{"id":"nombre_de_quien_confirma","label":"NOMBRE DE QUIEN CONFIRMA","input":"text","placeholder":""},{"id":"numero_al_que_confirma","label":"NUMERO AL QUE CONFIRMA","input":"text","placeholder":""},{"id":"cantidad_tv","label":"CANTIDAD TV","input":"text","placeholder":""},{"id":"id_tecnico_2","label":"ID TECNICO (confirmacion con cliente)","input":"text","placeholder":""},{"id":"id_cliente","label":"ID CLIENTE","input":"textarea"}]},{"col":"C","label":"CIERRE","code":"DA CON WTTH","rows":[{"kind":"field","id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"mano_de_obra","label":"MANO DE OBRA","input":"textarea","prefix":"MANO DE OBRA: "},{"kind":"field","id":"coordenadas","label":"COORDENADAS","input":"text","placeholder":"","prefix":"COORDENADAS: "},{"kind":"field","id":"sim","label":"SIM","input":"text","placeholder":"","prefix":"SIM: "},{"kind":"field","id":"cpe","label":"CPE","input":"text","placeholder":"","prefix":"CPE: "},{"kind":"field","id":"nombre_de_quien_confirma","label":"NOMBRE DE QUIEN CONFIRMA","input":"text","placeholder":"","prefix":"NOMBRE DE QUIEN CONFIRMA: "},{"kind":"field","id":"numero_al_que_confirma","label":"NUMERO AL QUE CONFIRMA","input":"text","placeholder":"","prefix":"NUMERO AL QUE CONFIRMA: "},{"kind":"templated","raw":"CABLEADO: @@FIELD:cableado@@","fieldIds":["cableado"]},{"kind":"field","id":"cantidad_tv","label":"CANTIDAD TV","input":"text","placeholder":"","prefix":"CANTIDAD TV: "},{"kind":"codigo_hora","id":"codigo_de_prueba","label":"CODIGO DE PRUEBA","prefix":"CODIGO DE PRUEBA: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"},{"kind":"blank"},{"kind":"blank"},{"kind":"static","text":"**CONFIRMACION CON CLIENTE**"},{"kind":"static","text":"*_*"},{"kind":"field","id":"id_tecnico_2","label":"ID TECNICO (confirmacion con cliente)","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"id_cliente","label":"ID CLIENTE","input":"textarea","prefix":"ID CLIENTE: "},{"kind":"templated","raw":"¿Todos los equipos quedaron instalados y funcionando correctamente? @@FIELD:q115_todos_los_equipos_quedaron_i@@","fieldIds":["q115_todos_los_equipos_quedaron_i"]},{"kind":"templated","raw":"¿Está de acuerdo con el cableado realizado en la instalación de sus servicios? @@FIELD:q116_est_de_acuerdo_con_el_cablea@@","fieldIds":["q116_est_de_acuerdo_con_el_cablea"]},{"kind":"templated","raw":"¿La línea telefónica funciona correctamente? @@FIELD:q117_la_l_nea_telef_nica_funciona@@","fieldIds":["q117_la_l_nea_telef_nica_funciona"]},{"kind":"templated","raw":"¿Técnico le entregó aparato telefónico? (Si aplica) @@FIELD:q118_t_cnico_le_entreg_aparato_te@@","fieldIds":["q118_t_cnico_le_entreg_aparato_te"]},{"kind":"templated","raw":"¿Se realizaron pruebas en el servicio de internet y funciona correctamente? @@FIELD:q119_se_realizaron_pruebas_en_el_@@","fieldIds":["q119_se_realizaron_pruebas_en_el_"]},{"kind":"templated","raw":"¿El técnico hizo la certificación de señal wifi en su domicilio? @@FIELD:q120_el_t_cnico_hizo_la_certifica@@","fieldIds":["q120_el_t_cnico_hizo_la_certifica"]},{"kind":"templated","raw":"¿Todos los televisores quedaron conectados, cableados y en funcionamiento? @@FIELD:q121_todos_los_televisores_quedar@@","fieldIds":["q121_todos_los_televisores_quedar"]},{"kind":"templated","raw":"¿Le realizaron la entrega del control remoto para cada uno de los televisores? @@FIELD:q122_le_realizaron_la_entrega_del@@","fieldIds":["q122_le_realizaron_la_entrega_del"]},{"kind":"templated","raw":"¿Está de acuerdo con el servicio recibido y autoriza el cierre de la orden? @@FIELD:q123_est_de_acuerdo_con_el_servic@@","fieldIds":["q123_est_de_acuerdo_con_el_servic"]},{"kind":"codigo_hora","id":"codigo_de_prueba_2","label":"CODIGO DE PRUEBA (confirmacion con cliente)","prefix":"CODIGO DE PRUEBA: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"q115_todos_los_equipos_quedaron_i","label":"Todos los equipos quedaron instalados y funcionando correctamente","input":"select","options":["SI","NO"]},{"id":"q116_est_de_acuerdo_con_el_cablea","label":"Está de acuerdo con el cableado realizado en la instalación de sus servicios","input":"select","options":["SI","NO"]},{"id":"q117_la_l_nea_telef_nica_funciona","label":"La línea telefónica funciona correctamente","input":"select","options":["SI","NO"]},{"id":"q118_t_cnico_le_entreg_aparato_te","label":"Técnico le entregó aparato telefónico (Si aplica)","input":"select","options":["SI","NO"]},{"id":"q119_se_realizaron_pruebas_en_el_","label":"Se realizaron pruebas en el servicio de internet y funciona correctamente","input":"select","options":["SI","NO"]},{"id":"q120_el_t_cnico_hizo_la_certifica","label":"El técnico hizo la certificación de señal wifi en su domicilio","input":"select","options":["SI","NO"]},{"id":"q121_todos_los_televisores_quedar","label":"Todos los televisores quedaron conectados, cableados y en funcionamiento","input":"select","options":["SI","NO"]},{"id":"q122_le_realizaron_la_entrega_del","label":"Le realizaron la entrega del control remoto para cada uno de los televisores","input":"select","options":["SI","NO"]},{"id":"q123_est_de_acuerdo_con_el_servic","label":"Está de acuerdo con el servicio recibido y autoriza el cierre de la orden","input":"select","options":["SI","NO"]},{"id":"cableado","label":"Cableado","input":"multiselect","options":["GRAPAS","DUCTOS","PEGADO","AEREO"]},{"id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":""},{"id":"mano_de_obra","label":"MANO DE OBRA","input":"textarea"},{"id":"coordenadas","label":"COORDENADAS","input":"text","placeholder":""},{"id":"sim","label":"SIM","input":"text","placeholder":""},{"id":"cpe","label":"CPE","input":"text","placeholder":""},{"id":"nombre_de_quien_confirma","label":"NOMBRE DE QUIEN CONFIRMA","input":"text","placeholder":""},{"id":"numero_al_que_confirma","label":"NUMERO AL QUE CONFIRMA","input":"text","placeholder":""},{"id":"cantidad_tv","label":"CANTIDAD TV","input":"text","placeholder":""},{"id":"id_tecnico_2","label":"ID TECNICO (confirmacion con cliente)","input":"text","placeholder":""},{"id":"id_cliente","label":"ID CLIENTE","input":"textarea"}]},{"col":"D","label":"CIERRE","code":"WTTH","rows":[{"kind":"field","id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"mano_de_obra","label":"MANO DE OBRA","input":"textarea","prefix":"MANO DE OBRA: "},{"kind":"field","id":"coordenadas","label":"COORDENADAS","input":"text","placeholder":"","prefix":"COORDENADAS: "},{"kind":"field","id":"sim","label":"SIM","input":"text","placeholder":"","prefix":"SIM: "},{"kind":"field","id":"cpe","label":"CPE","input":"text","placeholder":"","prefix":"CPE: "},{"kind":"field","id":"nombre_de_quien_confirma","label":"NOMBRE DE QUIEN CONFIRMA","input":"text","placeholder":"","prefix":"NOMBRE DE QUIEN CONFIRMA: "},{"kind":"field","id":"numero_al_que_confirma","label":"NUMERO AL QUE CONFIRMA","input":"text","placeholder":"","prefix":"NUMERO AL QUE CONFIRMA: "},{"kind":"templated","raw":"CABLEADO: @@FIELD:cableado@@","fieldIds":["cableado"]},{"kind":"codigo_hora","id":"codigo_de_prueba","label":"CODIGO DE PRUEBA","prefix":"CODIGO DE PRUEBA: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"},{"kind":"blank"},{"kind":"blank"},{"kind":"static","text":"**CONFIRMACION CON CLIENTE**"},{"kind":"static","text":"*_*"},{"kind":"field","id":"id_tecnico_2","label":"ID TECNICO (confirmacion con cliente)","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"id_cliente","label":"ID CLIENTE","input":"textarea","prefix":"ID CLIENTE: "},{"kind":"templated","raw":"¿Todos los equipos quedaron instalados y funcionando correctamente? @@FIELD:q124_todos_los_equipos_quedaron_i@@","fieldIds":["q124_todos_los_equipos_quedaron_i"]},{"kind":"templated","raw":"¿Está de acuerdo con el cableado realizado en la instalación de sus servicios? @@FIELD:q125_est_de_acuerdo_con_el_cablea@@","fieldIds":["q125_est_de_acuerdo_con_el_cablea"]},{"kind":"templated","raw":"¿La línea telefónica funciona correctamente? @@FIELD:q126_la_l_nea_telef_nica_funciona@@","fieldIds":["q126_la_l_nea_telef_nica_funciona"]},{"kind":"templated","raw":"¿Técnico le entregó aparato telefónico? (Si aplica) @@FIELD:q127_t_cnico_le_entreg_aparato_te@@","fieldIds":["q127_t_cnico_le_entreg_aparato_te"]},{"kind":"templated","raw":"¿Se realizaron pruebas en el servicio de internet y funciona correctamente? @@FIELD:q128_se_realizaron_pruebas_en_el_@@","fieldIds":["q128_se_realizaron_pruebas_en_el_"]},{"kind":"templated","raw":"¿El técnico hizo la certificación de señal wifi en su domicilio? @@FIELD:q129_el_t_cnico_hizo_la_certifica@@","fieldIds":["q129_el_t_cnico_hizo_la_certifica"]},{"kind":"templated","raw":"¿Está de acuerdo con el servicio recibido y autoriza el cierre de la orden? @@FIELD:q130_est_de_acuerdo_con_el_servic@@","fieldIds":["q130_est_de_acuerdo_con_el_servic"]},{"kind":"codigo_hora","id":"codigo_de_prueba_2","label":"CODIGO DE PRUEBA (confirmacion con cliente)","prefix":"CODIGO DE PRUEBA: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"q124_todos_los_equipos_quedaron_i","label":"Todos los equipos quedaron instalados y funcionando correctamente","input":"select","options":["SI","NO"]},{"id":"q125_est_de_acuerdo_con_el_cablea","label":"Está de acuerdo con el cableado realizado en la instalación de sus servicios","input":"select","options":["SI","NO"]},{"id":"q126_la_l_nea_telef_nica_funciona","label":"La línea telefónica funciona correctamente","input":"select","options":["SI","NO"]},{"id":"q127_t_cnico_le_entreg_aparato_te","label":"Técnico le entregó aparato telefónico (Si aplica)","input":"select","options":["SI","NO"]},{"id":"q128_se_realizaron_pruebas_en_el_","label":"Se realizaron pruebas en el servicio de internet y funciona correctamente","input":"select","options":["SI","NO"]},{"id":"q129_el_t_cnico_hizo_la_certifica","label":"El técnico hizo la certificación de señal wifi en su domicilio","input":"select","options":["SI","NO"]},{"id":"q130_est_de_acuerdo_con_el_servic","label":"Está de acuerdo con el servicio recibido y autoriza el cierre de la orden","input":"select","options":["SI","NO"]},{"id":"cableado","label":"Cableado","input":"multiselect","options":["GRAPAS","DUCTOS","PEGADO","AEREO"]},{"id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":""},{"id":"mano_de_obra","label":"MANO DE OBRA","input":"textarea"},{"id":"coordenadas","label":"COORDENADAS","input":"text","placeholder":""},{"id":"sim","label":"SIM","input":"text","placeholder":""},{"id":"cpe","label":"CPE","input":"text","placeholder":""},{"id":"nombre_de_quien_confirma","label":"NOMBRE DE QUIEN CONFIRMA","input":"text","placeholder":""},{"id":"numero_al_que_confirma","label":"NUMERO AL QUE CONFIRMA","input":"text","placeholder":""},{"id":"id_tecnico_2","label":"ID TECNICO (confirmacion con cliente)","input":"text","placeholder":""},{"id":"id_cliente","label":"ID CLIENTE","input":"textarea"}]},{"col":"E","label":"CIERRE + TV","code":"DL - IT","rows":[{"kind":"field","id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"mano_de_obra","label":"MANO DE OBRA","input":"textarea","prefix":"MANO DE OBRA: "},{"kind":"field","id":"coordenadas","label":"COORDENADAS","input":"text","placeholder":"","prefix":"COORDENADAS: "},{"kind":"field","id":"nombre_de_quien_confirma","label":"NOMBRE DE QUIEN CONFIRMA","input":"text","placeholder":"","prefix":"NOMBRE DE QUIEN CONFIRMA: "},{"kind":"field","id":"numero_al_que_confirma","label":"NUMERO AL QUE CONFIRMA","input":"text","placeholder":"","prefix":"NUMERO AL QUE CONFIRMA: "},{"kind":"templated","raw":"CABLEADO: @@FIELD:cableado@@","fieldIds":["cableado"]},{"kind":"field","id":"cantidad_tv","label":"CANTIDAD TV","input":"text","placeholder":"","prefix":"CANTIDAD TV: "},{"kind":"codigo_hora","id":"codigo_de_prueba","label":"CODIGO DE PRUEBA","prefix":"CODIGO DE PRUEBA: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"},{"kind":"blank"},{"kind":"blank"},{"kind":"static","text":"**CONFIRMACION CON CLIENTE**"},{"kind":"static","text":"*_*"},{"kind":"field","id":"id_tecnico_2","label":"ID TECNICO (confirmacion con cliente)","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"id_cliente","label":"ID CLIENTE","input":"textarea","prefix":"ID CLIENTE: "},{"kind":"templated","raw":"¿Todos los equipos quedaron instalados y funcionando correctamente? @@FIELD:q131_todos_los_equipos_quedaron_i@@","fieldIds":["q131_todos_los_equipos_quedaron_i"]},{"kind":"templated","raw":"¿Está de acuerdo con el cableado realizado en la instalación de sus servicios? @@FIELD:q132_est_de_acuerdo_con_el_cablea@@","fieldIds":["q132_est_de_acuerdo_con_el_cablea"]},{"kind":"templated","raw":"¿La línea telefónica funciona correctamente? @@FIELD:q133_la_l_nea_telef_nica_funciona@@","fieldIds":["q133_la_l_nea_telef_nica_funciona"]},{"kind":"templated","raw":"¿Técnico le entregó aparato telefónico? (Si aplica) @@FIELD:q134_t_cnico_le_entreg_aparato_te@@","fieldIds":["q134_t_cnico_le_entreg_aparato_te"]},{"kind":"templated","raw":"¿Se realizaron pruebas en el servicio de internet y funciona correctamente? @@FIELD:q135_se_realizaron_pruebas_en_el_@@","fieldIds":["q135_se_realizaron_pruebas_en_el_"]},{"kind":"templated","raw":"¿El técnico hizo la certificación de señal wifi en su domicilio? @@FIELD:q136_el_t_cnico_hizo_la_certifica@@","fieldIds":["q136_el_t_cnico_hizo_la_certifica"]},{"kind":"templated","raw":"¿Todos los televisores quedaron conectados, cableados y en funcionamiento? @@FIELD:q137_todos_los_televisores_quedar@@","fieldIds":["q137_todos_los_televisores_quedar"]},{"kind":"templated","raw":"¿Le realizaron la entrega del control remoto para cada uno de los televisores? @@FIELD:q138_le_realizaron_la_entrega_del@@","fieldIds":["q138_le_realizaron_la_entrega_del"]},{"kind":"templated","raw":"¿Está de acuerdo con el servicio recibido y autoriza el cierre de la orden? @@FIELD:q139_est_de_acuerdo_con_el_servic@@","fieldIds":["q139_est_de_acuerdo_con_el_servic"]},{"kind":"codigo_hora","id":"codigo_de_prueba_2","label":"CODIGO DE PRUEBA (confirmacion con cliente)","prefix":"CODIGO DE PRUEBA: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"q131_todos_los_equipos_quedaron_i","label":"Todos los equipos quedaron instalados y funcionando correctamente","input":"select","options":["SI","NO"]},{"id":"q132_est_de_acuerdo_con_el_cablea","label":"Está de acuerdo con el cableado realizado en la instalación de sus servicios","input":"select","options":["SI","NO"]},{"id":"q133_la_l_nea_telef_nica_funciona","label":"La línea telefónica funciona correctamente","input":"select","options":["SI","NO"]},{"id":"q134_t_cnico_le_entreg_aparato_te","label":"Técnico le entregó aparato telefónico (Si aplica)","input":"select","options":["SI","NO"]},{"id":"q135_se_realizaron_pruebas_en_el_","label":"Se realizaron pruebas en el servicio de internet y funciona correctamente","input":"select","options":["SI","NO"]},{"id":"q136_el_t_cnico_hizo_la_certifica","label":"El técnico hizo la certificación de señal wifi en su domicilio","input":"select","options":["SI","NO"]},{"id":"q137_todos_los_televisores_quedar","label":"Todos los televisores quedaron conectados, cableados y en funcionamiento","input":"select","options":["SI","NO"]},{"id":"q138_le_realizaron_la_entrega_del","label":"Le realizaron la entrega del control remoto para cada uno de los televisores","input":"select","options":["SI","NO"]},{"id":"q139_est_de_acuerdo_con_el_servic","label":"Está de acuerdo con el servicio recibido y autoriza el cierre de la orden","input":"select","options":["SI","NO"]},{"id":"cableado","label":"Cableado","input":"multiselect","options":["GRAPAS","DUCTOS","PEGADO","AEREO"]},{"id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":""},{"id":"mano_de_obra","label":"MANO DE OBRA","input":"textarea"},{"id":"coordenadas","label":"COORDENADAS","input":"text","placeholder":""},{"id":"nombre_de_quien_confirma","label":"NOMBRE DE QUIEN CONFIRMA","input":"text","placeholder":""},{"id":"numero_al_que_confirma","label":"NUMERO AL QUE CONFIRMA","input":"text","placeholder":""},{"id":"cantidad_tv","label":"CANTIDAD TV","input":"text","placeholder":""},{"id":"id_tecnico_2","label":"ID TECNICO (confirmacion con cliente)","input":"text","placeholder":""},{"id":"id_cliente","label":"ID CLIENTE","input":"textarea"}]}]},"COBRE":{"ACTIVACION":[{"col":"B","label":"REPORTE DE PUENTES","code":"","rows":[{"kind":"field","id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"id_llamada","label":"ID LLAMADA","input":"text","placeholder":"","prefix":"ID LLAMADA: "},{"kind":"field","id":"puentes_en_mdf_se_al_ok_ct","label":"PUENTES EN MDF + SEÑAL OK CT","input":"text","placeholder":"","prefix":"PUENTES EN MDF + SEÑAL OK CT: "},{"kind":"field","id":"metros_de_ct_a_cliente","label":"METROS DE CT A CLIENTE","input":"text","placeholder":"","prefix":"METROS DE CT A CLIENTE: "},{"kind":"field","id":"red","label":"RED","input":"text","placeholder":"XXX000 /  000 ......  00","prefix":"RED: "},{"kind":"field","id":"red_extra","label":"RED (línea adicional)","input":"text","placeholder":"XXX000 / .......... 0000","prefix":""},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":""},{"id":"id_llamada","label":"ID LLAMADA","input":"text","placeholder":""},{"id":"puentes_en_mdf_se_al_ok_ct","label":"PUENTES EN MDF + SEÑAL OK CT","input":"text","placeholder":""},{"id":"metros_de_ct_a_cliente","label":"METROS DE CT A CLIENTE","input":"text","placeholder":""},{"id":"red","label":"RED","input":"text","placeholder":"XXX000 /  000 ......  00"},{"id":"red_extra","label":"RED (línea adicional)","input":"text","placeholder":"XXX000 / .......... 0000"}]},{"col":"C","label":"CIERRE DE COBRE","code":"","rows":[{"kind":"field","id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"id_cliente","label":"ID CLIENTE","input":"textarea","prefix":"ID CLIENTE: "},{"kind":"field","id":"red","label":"RED","input":"text","placeholder":"","prefix":"RED: "},{"kind":"field","id":"mano_de_obra","label":"MANO DE OBRA","input":"textarea","prefix":"MANO DE OBRA: "},{"kind":"field","id":"nombre_de_quien_confirma","label":"NOMBRE DE QUIEN CONFIRMA","input":"text","placeholder":"","prefix":"NOMBRE DE QUIEN CONFIRMA: "},{"kind":"field","id":"numero_al_que_confirma","label":"NUMERO AL QUE CONFIRMA","input":"text","placeholder":"","prefix":"NUMERO AL QUE CONFIRMA: "},{"kind":"templated","raw":"CABLEADO: @@FIELD:cableado@@","fieldIds":["cableado"]},{"kind":"codigo_hora","id":"codigo_de_prueba","label":"CODIGO DE PRUEBA","prefix":"CODIGO DE PRUEBA: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"},{"kind":"blank"},{"kind":"blank"},{"kind":"static","text":"**CONFIRMACION CON CLIENTE**"},{"kind":"static","text":"*_*"},{"kind":"field","id":"id_tecnico_2","label":"ID TECNICO (confirmacion con cliente)","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"id_cliente_2","label":"ID CLIENTE (confirmacion con cliente)","input":"textarea","prefix":"ID CLIENTE: "},{"kind":"templated","raw":"¿Todos los equipos quedaron instalados y funcionando correctamente? @@FIELD:q140_todos_los_equipos_quedaron_i@@","fieldIds":["q140_todos_los_equipos_quedaron_i"]},{"kind":"templated","raw":"¿Está de acuerdo con el cableado realizado en la instalación de sus servicios? @@FIELD:q141_est_de_acuerdo_con_el_cablea@@","fieldIds":["q141_est_de_acuerdo_con_el_cablea"]},{"kind":"templated","raw":"¿La línea telefónica funciona correctamente? @@FIELD:q142_la_l_nea_telef_nica_funciona@@","fieldIds":["q142_la_l_nea_telef_nica_funciona"]},{"kind":"templated","raw":"¿Técnico le entregó aparato telefónico? (Si aplica) @@FIELD:q143_t_cnico_le_entreg_aparato_te@@","fieldIds":["q143_t_cnico_le_entreg_aparato_te"]},{"kind":"templated","raw":"¿Se realizaron pruebas en el servicio de internet y funciona correctamente? @@FIELD:q144_se_realizaron_pruebas_en_el_@@","fieldIds":["q144_se_realizaron_pruebas_en_el_"]},{"kind":"templated","raw":"¿El técnico hizo la certificación de señal wifi en su domicilio? @@FIELD:q145_el_t_cnico_hizo_la_certifica@@","fieldIds":["q145_el_t_cnico_hizo_la_certifica"]},{"kind":"templated","raw":"¿Está de acuerdo con el servicio recibido y autoriza el cierre de la orden? @@FIELD:q146_est_de_acuerdo_con_el_servic@@","fieldIds":["q146_est_de_acuerdo_con_el_servic"]},{"kind":"codigo_hora","id":"codigo_de_prueba_2","label":"CODIGO DE PRUEBA (confirmacion con cliente)","prefix":"CODIGO DE PRUEBA: "},{"kind":"despacho","prefix":"DESPACHO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"q140_todos_los_equipos_quedaron_i","label":"Todos los equipos quedaron instalados y funcionando correctamente","input":"select","options":["SI","NO"]},{"id":"q141_est_de_acuerdo_con_el_cablea","label":"Está de acuerdo con el cableado realizado en la instalación de sus servicios","input":"select","options":["SI","NO"]},{"id":"q142_la_l_nea_telef_nica_funciona","label":"La línea telefónica funciona correctamente","input":"select","options":["SI","NO"]},{"id":"q143_t_cnico_le_entreg_aparato_te","label":"Técnico le entregó aparato telefónico (Si aplica)","input":"select","options":["SI","NO"]},{"id":"q144_se_realizaron_pruebas_en_el_","label":"Se realizaron pruebas en el servicio de internet y funciona correctamente","input":"select","options":["SI","NO"]},{"id":"q145_el_t_cnico_hizo_la_certifica","label":"El técnico hizo la certificación de señal wifi en su domicilio","input":"select","options":["SI","NO"]},{"id":"q146_est_de_acuerdo_con_el_servic","label":"Está de acuerdo con el servicio recibido y autoriza el cierre de la orden","input":"select","options":["SI","NO"]},{"id":"cableado","label":"Cableado","input":"multiselect","options":["GRAPAS","DUCTOS","PEGADO","AEREO"]},{"id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":""},{"id":"id_cliente","label":"ID CLIENTE","input":"textarea"},{"id":"red","label":"RED","input":"text","placeholder":""},{"id":"mano_de_obra","label":"MANO DE OBRA","input":"textarea"},{"id":"nombre_de_quien_confirma","label":"NOMBRE DE QUIEN CONFIRMA","input":"text","placeholder":""},{"id":"numero_al_que_confirma","label":"NUMERO AL QUE CONFIRMA","input":"text","placeholder":""},{"id":"id_tecnico_2","label":"ID TECNICO (confirmacion con cliente)","input":"text","placeholder":""},{"id":"id_cliente_2","label":"ID CLIENTE (confirmacion con cliente)","input":"textarea"}]}]}},"CASOS":[{"id":"cpd","label":"CPD","rows":[{"kind":"static","text":"**PLANTILLA CPD**"},{"kind":"field","id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"ticket","label":"TICKET","input":"text","placeholder":"","prefix":"TICKET: "},{"kind":"field","id":"orden","label":"ORDEN","input":"text","placeholder":"","prefix":"ORDEN: "},{"kind":"field","id":"numero_fijo","label":"NUMERO FIJO","input":"text","placeholder":"","prefix":"NUMERO FIJO: "},{"kind":"field","id":"virtual","label":"VIRTUAL","input":"text","placeholder":"","prefix":"VIRTUAL: "},{"kind":"field","id":"mac","label":"MAC","input":"text","placeholder":"","prefix":"MAC: "},{"kind":"field","id":"serie_o_mta","label":"SERIE O MTA","input":"text","placeholder":"","prefix":"SERIE O MTA: "},{"kind":"field","id":"error","label":"ERROR","input":"text","placeholder":"","prefix":"ERROR: "},{"kind":"despacho","prefix":"SEGUIMIENTO "}],"fields":[{"id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":""},{"id":"ticket","label":"TICKET","input":"text","placeholder":""},{"id":"orden","label":"ORDEN","input":"text","placeholder":""},{"id":"numero_fijo","label":"NUMERO FIJO","input":"text","placeholder":""},{"id":"virtual","label":"VIRTUAL","input":"text","placeholder":""},{"id":"mac","label":"MAC","input":"text","placeholder":""},{"id":"serie_o_mta","label":"SERIE O MTA","input":"text","placeholder":""},{"id":"error","label":"ERROR","input":"text","placeholder":""}]},{"id":"qflow","label":"QFLOW","rows":[{"kind":"static","text":"**PLANTILLA QFLOW**"},{"kind":"field","id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":"","prefix":"ID TECNICO: "},{"kind":"field","id":"os_principal","label":"OS PRINCIPAL","input":"text","placeholder":"","prefix":"OS PRINCIPAL: "},{"kind":"field","id":"os_problema","label":"OS PROBLEMA","input":"text","placeholder":"","prefix":"OS PROBLEMA: "},{"kind":"field","id":"virtual","label":"VIRTUAL","input":"text","placeholder":"","prefix":"VIRTUAL: "},{"kind":"field","id":"facturador","label":"FACTURADOR","input":"text","placeholder":"","prefix":"FACTURADOR: "},{"kind":"field","id":"comentarios","label":"COMENTARIOS","input":"text","placeholder":"","prefix":"COMENTARIOS: "},{"kind":"field","id":"error","label":"ERROR","input":"text","placeholder":"","prefix":"ERROR: "},{"kind":"despacho","prefix":"SEGUIMIENTO "}],"fields":[{"id":"id_tecnico","label":"ID TECNICO","input":"text","placeholder":""},{"id":"os_principal","label":"OS PRINCIPAL","input":"text","placeholder":""},{"id":"os_problema","label":"OS PROBLEMA","input":"text","placeholder":""},{"id":"virtual","label":"VIRTUAL","input":"text","placeholder":""},{"id":"facturador","label":"FACTURADOR","input":"text","placeholder":""},{"id":"comentarios","label":"COMENTARIOS","input":"text","placeholder":""},{"id":"error","label":"ERROR","input":"text","placeholder":""}]},{"id":"qflow_tlmk","label":"QFLOW TLMK","rows":[{"kind":"field","id":"n_mero_de_orden","label":"Número de orden","input":"text","placeholder":"","prefix":"Número de orden: "},{"kind":"field","id":"n_mero_de_qflow","label":"Número de QfloW","input":"text","placeholder":"","prefix":"Número de QfloW: "},{"kind":"field","id":"motivo_del_escalamiento","label":"Motivo del escalamiento","input":"text","placeholder":"CLIENTE ILOCALIZABLE","prefix":"Motivo del escalamiento: "},{"kind":"field","id":"canal_responsible","label":"Canal responsible","input":"text","placeholder":"","prefix":"Canal responsible: "},{"kind":"field","id":"comentarios","label":"Comentarios","input":"text","placeholder":"","prefix":"Comentarios: "}],"fields":[{"id":"n_mero_de_orden","label":"Número de orden","input":"text","placeholder":""},{"id":"n_mero_de_qflow","label":"Número de QfloW","input":"text","placeholder":""},{"id":"motivo_del_escalamiento","label":"Motivo del escalamiento","input":"text","placeholder":"CLIENTE ILOCALIZABLE"},{"id":"canal_responsible","label":"Canal responsible","input":"text","placeholder":""},{"id":"comentarios","label":"Comentarios","input":"text","placeholder":""}]}],"GENERALES":[{"id":"memo_informativo","label":"Memo informativo","rows":[{"kind":"static","text":"*-*"},{"kind":"field","id":"informacion","label":"INFORMACIÓN","input":"textarea","placeholder":"Escribe aquí la información del caso…"},{"kind":"static","text":"*-*"}],"fields":[{"id":"informacion","label":"INFORMACIÓN","input":"textarea","placeholder":"Escribe aquí la información del caso…"}]},{"id":"suspension","label":"Suspensión","rows":[{"kind":"static","text":"*****MEMO SUSPENSIÓN****"},{"kind":"static","text":"*-*"},{"kind":"field","id":"codigo_tecnico_nombre_tecnic","label":"CODIGO TECNICO (NOMBRE TECNICO)","input":"text","placeholder":"","prefix":"CODIGO TECNICO (NOMBRE TECNICO): "},{"kind":"channel","id":"canal_contacto"},{"kind":"field","id":"motivo_suspension","label":"MOTIVO SUSPENSION","input":"text","placeholder":"SOLICITUD TECNICO:","prefix":"MOTIVO SUSPENSION: "},{"kind":"field","id":"cliente","label":"CLIENTE","input":"text","placeholder":"","prefix":"CLIENTE: "},{"kind":"field","id":"tel","label":"TEL","input":"text","placeholder":"","prefix":"TEL: "},{"kind":"field","id":"comentarios","label":"COMENTARIOS","input":"text","placeholder":"","prefix":"COMENTARIOS: "},{"kind":"field","id":"id_cliente","label":"ID CLIENTE","input":"textarea","prefix":"ID CLIENTE: "},{"kind":"despacho","prefix":"SEGUIMIENTO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"codigo_tecnico_nombre_tecnic","label":"CODIGO TECNICO (NOMBRE TECNICO)","input":"text","placeholder":""},{"id":"canal_contacto","label":"Canal de contacto","input":"channel"},{"id":"motivo_suspension","label":"MOTIVO SUSPENSION","input":"text","placeholder":"SOLICITUD TECNICO:"},{"id":"cliente","label":"CLIENTE","input":"text","placeholder":""},{"id":"tel","label":"TEL","input":"text","placeholder":""},{"id":"comentarios","label":"COMENTARIOS","input":"text","placeholder":""},{"id":"id_cliente","label":"ID CLIENTE","input":"textarea"}]},{"id":"seguimiento","label":"Seguimiento","rows":[{"kind":"static","text":"*****MEMO SEGUIMIENTO****"},{"kind":"static","text":"*-*"},{"kind":"blank"},{"kind":"field","id":"codigo_tecnico_y_nombre_tecn","label":"CODIGO TECNICO Y NOMBRE TECNICO","input":"text","placeholder":"","prefix":"CODIGO TECNICO Y NOMBRE TECNICO: "},{"kind":"channel","id":"canal_contacto"},{"kind":"field","id":"cliente","label":"CLIENTE","input":"text","placeholder":"SOLO SI SE HABLA CON CLIENTE","prefix":"CLIENTE: "},{"kind":"field","id":"tel","label":"TEL","input":"text","placeholder":"SOLO SI SE HABLA CON CLIENTE","prefix":"TEL: "},{"kind":"field","id":"comentarios","label":"COMENTARIOS","input":"text","placeholder":"","prefix":"COMENTARIOS: "},{"kind":"field","id":"id_cliente","label":"ID CLIENTE","input":"textarea","prefix":"ID CLIENTE: "},{"kind":"despacho","prefix":"SEGUIMIENTO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"codigo_tecnico_y_nombre_tecn","label":"CODIGO TECNICO Y NOMBRE TECNICO","input":"text","placeholder":""},{"id":"canal_contacto","label":"Canal de contacto","input":"channel"},{"id":"cliente","label":"CLIENTE","input":"text","placeholder":"SOLO SI SE HABLA CON CLIENTE"},{"id":"tel","label":"TEL","input":"text","placeholder":"SOLO SI SE HABLA CON CLIENTE"},{"id":"comentarios","label":"COMENTARIOS","input":"text","placeholder":""},{"id":"id_cliente","label":"ID CLIENTE","input":"textarea"}]},{"id":"ilocalizable","label":"Ilocalizable","rows":[{"kind":"static","text":"**MEMO ILOCALIZABLE**"},{"kind":"static","text":"*-*"},{"kind":"field","id":"codigo_tecnico_y_nombre_tecn","label":"CODIGO TECNICO Y NOMBRE TECNICO","input":"text","placeholder":"","prefix":"CODIGO TECNICO Y NOMBRE TECNICO: "},{"kind":"channel","id":"canal_contacto"},{"kind":"field","id":"cliente","label":"CLIENTE","input":"text","placeholder":"","prefix":"CLIENTE: "},{"kind":"field","id":"ref","label":"REF","input":"text","placeholder":"","prefix":"REF: "},{"kind":"field","id":"comentarios","label":"COMENTARIOS","input":"text","placeholder":"","prefix":"COMENTARIOS: "},{"kind":"static","text":"CL NO RESPONDE SE TIMBRA A REFERENCIAS, SE ESCALA AL CANAL."},{"kind":"field","id":"id_cliente","label":"ID CLIENTE","input":"textarea","prefix":"ID CLIENTE: "},{"kind":"despacho","prefix":"SEGUIMIENTO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"codigo_tecnico_y_nombre_tecn","label":"CODIGO TECNICO Y NOMBRE TECNICO","input":"text","placeholder":""},{"id":"canal_contacto","label":"Canal de contacto","input":"channel"},{"id":"cliente","label":"CLIENTE","input":"text","placeholder":""},{"id":"ref","label":"REF","input":"text","placeholder":""},{"id":"comentarios","label":"COMENTARIOS","input":"text","placeholder":""},{"id":"id_cliente","label":"ID CLIENTE","input":"textarea"}]},{"id":"orden_mal_generada","label":"Orden mal generada","rows":[{"kind":"static","text":"**ORDEN MAL GENERADA**"},{"kind":"static","text":"*-*"},{"kind":"field","id":"codigo_tecnico_y_nombre_tecn","label":"CODIGO TECNICO Y NOMBRE TECNICO","input":"text","placeholder":"","prefix":"CODIGO TECNICO Y NOMBRE TECNICO: "},{"kind":"channel","id":"canal_contacto"},{"kind":"field","id":"cliente","label":"CLIENTE","input":"text","placeholder":"","prefix":"CLIENTE: "},{"kind":"field","id":"comentarios","label":"COMENTARIOS","input":"text","placeholder":"","prefix":"COMENTARIOS: "},{"kind":"static","text":"INDICAR MOTIVO DE MAL GENERADA, SE ESCALA AL CANAL."},{"kind":"despacho","prefix":"SEGUIMIENTO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"codigo_tecnico_y_nombre_tecn","label":"CODIGO TECNICO Y NOMBRE TECNICO","input":"text","placeholder":""},{"id":"canal_contacto","label":"Canal de contacto","input":"channel"},{"id":"cliente","label":"CLIENTE","input":"text","placeholder":""},{"id":"comentarios","label":"COMENTARIOS","input":"text","placeholder":""}]},{"id":"inactivacion","label":"Inactivación de suborden","rows":[{"kind":"static","text":"*MEMO INACTIVACION SUBORDEN*"},{"kind":"static","text":"*-*"},{"kind":"field","id":"tec","label":"TEC","input":"text","placeholder":"","prefix":"TEC: "},{"kind":"field","id":"id","label":"ID","input":"text","placeholder":"","prefix":"ID: "},{"kind":"field","id":"solicitud_tecnico","label":"SOLICITUD TECNICO","input":"text","placeholder":"","prefix":"SOLICITUD TECNICO: "},{"kind":"field","id":"cliente","label":"CLIENTE","input":"text","placeholder":"","prefix":"CLIENTE: "},{"kind":"field","id":"ref","label":"REF","input":"text","placeholder":"","prefix":"REF: "},{"kind":"field","id":"comentario","label":"COMENTARIO","input":"textarea","prefix":"COMENTARIO: "},{"kind":"despacho","prefix":"FIRMA: "},{"kind":"static","text":"*-*"}],"fields":[{"id":"tec","label":"TEC","input":"text","placeholder":""},{"id":"id","label":"ID","input":"text","placeholder":""},{"id":"solicitud_tecnico","label":"SOLICITUD TECNICO","input":"text","placeholder":""},{"id":"cliente","label":"CLIENTE","input":"text","placeholder":""},{"id":"ref","label":"REF","input":"text","placeholder":""},{"id":"comentario","label":"COMENTARIO","input":"textarea"}]},{"id":"reagendamiento","label":"Reagendamiento de cita","rows":[{"kind":"blank"},{"kind":"static","text":"**** MEMO REAGENDAMIENTO DE CITA ****"},{"kind":"static","text":"*-*"},{"kind":"field","id":"codigo_tecnico_nombre_tecnic","label":"CODIGO TECNICO (NOMBRE TECNICO)","input":"text","placeholder":"","prefix":"CODIGO TECNICO (NOMBRE TECNICO): "},{"kind":"channel","id":"canal_contacto"},{"kind":"field","id":"cita_para_el_dia","label":"CITA PARA EL DIA","input":"text","placeholder":"","prefix":"CITA PARA EL DIA: "},{"kind":"field","id":"cliente","label":"CLIENTE","input":"text","placeholder":"","prefix":"CLIENTE: "},{"kind":"field","id":"tel","label":"TEL","input":"text","placeholder":"","prefix":"TEL: "},{"kind":"field","id":"comentarios","label":"COMENTARIOS","input":"text","placeholder":"","prefix":"COMENTARIOS: "},{"kind":"field","id":"id_cliente","label":"ID CLIENTE","input":"textarea","prefix":"ID CLIENTE: "},{"kind":"despacho","prefix":"SEGUIMIENTO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"codigo_tecnico_nombre_tecnic","label":"CODIGO TECNICO (NOMBRE TECNICO)","input":"text","placeholder":""},{"id":"canal_contacto","label":"Canal de contacto","input":"channel"},{"id":"cita_para_el_dia","label":"CITA PARA EL DIA","input":"text","placeholder":""},{"id":"cliente","label":"CLIENTE","input":"text","placeholder":""},{"id":"tel","label":"TEL","input":"text","placeholder":""},{"id":"comentarios","label":"COMENTARIOS","input":"text","placeholder":""},{"id":"id_cliente","label":"ID CLIENTE","input":"textarea"}]},{"id":"confirmacion_visita","label":"Confirmación de visita","rows":[{"kind":"static","text":"*-*"},{"kind":"static","text":"****Confirmacion de Visita****"},{"kind":"field","id":"id_nombre_tecnico","label":"ID NOMBRE TECNICO","input":"text","placeholder":"","prefix":"ID NOMBRE TECNICO: "},{"kind":"field","id":"puede_atender_la_cita","label":"PUEDE ATENDER LA CITA","input":"text","placeholder":"si","prefix":"PUEDE ATENDER LA CITA: "},{"kind":"field","id":"servicio_contratado","label":"SERVICIO CONTRATADO","input":"text","placeholder":"","prefix":"SERVICIO CONTRATADO: "},{"kind":"field","id":"aparato_tl","label":"APARATO TL","input":"select","options":["SI","NO"],"prefix":"APARATO TL: "},{"kind":"field","id":"nombre_del_titular","label":"NOMBRE DEL TITULAR","input":"text","placeholder":"","prefix":"NOMBRE DEL TITULAR: "},{"kind":"field","id":"nombre_de_facturacion","label":"NOMBRE DE FACTURACION","input":"text","placeholder":"","prefix":"NOMBRE DE FACTURACION: "},{"kind":"field","id":"direcci_n","label":"DIRECCIÓN","input":"text","placeholder":"","prefix":"DIRECCIÓN: "},{"kind":"field","id":"codigo_de_acceso","label":"CODIGO DE ACCESO","input":"text","placeholder":"no","prefix":"CODIGO DE ACCESO: "},{"kind":"field","id":"punto_de_referencia","label":"PUNTO DE REFERENCIA","input":"text","placeholder":"","prefix":"PUNTO DE REFERENCIA: "},{"kind":"field","id":"atiende_en_domicilio","label":"ATIENDE EN DOMICILIO","input":"text","placeholder":"","prefix":"ATIENDE EN DOMICILIO: "},{"kind":"field","id":"cuenta_con_tvs","label":"CUENTA CON TVS","input":"text","placeholder":"","prefix":"CUENTA CON TVS: "},{"kind":"field","id":"cuenta_con_los_tv_en_fisico","label":"CUENTA CON LOS TV EN FISICO","input":"text","placeholder":"","prefix":"CUENTA CON LOS TV EN FISICO: "},{"kind":"field","id":"por_ser_fin_de_semana_cuenta","label":"POR SER FIN DE SEMANA CUENTA CON LOS PERMISOS","input":"text","placeholder":"","prefix":"POR SER FIN DE SEMANA CUENTA CON LOS PERMISOS: "},{"kind":"field","id":"correo","label":"CORREO","input":"text","placeholder":"","prefix":"CORREO: "},{"kind":"field","id":"se_valida_gui","label":"SE VALIDA GUI","input":"text","placeholder":"SI APLICA","prefix":"SE VALIDA GUI: "},{"kind":"field","id":"quien_atendio_llamada","label":"QUIEN ATENDIO LLAMADA","input":"text","placeholder":"","prefix":"QUIEN ATENDIO LLAMADA: "},{"kind":"field","id":"tel_de_cliente","label":"TEL. DE CLIENTE","input":"text","placeholder":"","prefix":"TEL. DE CLIENTE: "},{"kind":"field","id":"id_cliente","label":"ID CLIENTE","input":"textarea","prefix":"ID CLIENTE: "},{"kind":"despacho","prefix":"R: "},{"kind":"static","text":"*-*"}],"fields":[{"id":"id_nombre_tecnico","label":"ID NOMBRE TECNICO","input":"text","placeholder":""},{"id":"puede_atender_la_cita","label":"PUEDE ATENDER LA CITA","input":"text","placeholder":"si"},{"id":"servicio_contratado","label":"SERVICIO CONTRATADO","input":"text","placeholder":""},{"id":"aparato_tl","label":"APARATO TL","input":"select","options":["SI","NO"]},{"id":"nombre_del_titular","label":"NOMBRE DEL TITULAR","input":"text","placeholder":""},{"id":"nombre_de_facturacion","label":"NOMBRE DE FACTURACION","input":"text","placeholder":""},{"id":"direcci_n","label":"DIRECCIÓN","input":"text","placeholder":""},{"id":"codigo_de_acceso","label":"CODIGO DE ACCESO","input":"text","placeholder":"no"},{"id":"punto_de_referencia","label":"PUNTO DE REFERENCIA","input":"text","placeholder":""},{"id":"atiende_en_domicilio","label":"ATIENDE EN DOMICILIO","input":"text","placeholder":""},{"id":"cuenta_con_tvs","label":"CUENTA CON TVS","input":"text","placeholder":""},{"id":"cuenta_con_los_tv_en_fisico","label":"CUENTA CON LOS TV EN FISICO","input":"text","placeholder":""},{"id":"por_ser_fin_de_semana_cuenta","label":"POR SER FIN DE SEMANA CUENTA CON LOS PERMISOS","input":"text","placeholder":""},{"id":"correo","label":"CORREO","input":"text","placeholder":""},{"id":"se_valida_gui","label":"SE VALIDA GUI","input":"text","placeholder":"SI APLICA"},{"id":"quien_atendio_llamada","label":"QUIEN ATENDIO LLAMADA","input":"text","placeholder":""},{"id":"tel_de_cliente","label":"TEL. DE CLIENTE","input":"text","placeholder":""},{"id":"id_cliente","label":"ID CLIENTE","input":"textarea"}]},{"id":"antifraude","label":"Antifraude","rows":[{"kind":"static","text":"*****MEMO ANTIFRAUDE****"},{"kind":"static","text":"*-*"},{"kind":"blank"},{"kind":"field","id":"codigo_tecnico_y_nombre_tecn","label":"CODIGO TECNICO Y NOMBRE TECNICO","input":"text","placeholder":"","prefix":"CODIGO TECNICO Y NOMBRE TECNICO: "},{"kind":"channel","id":"canal_contacto"},{"kind":"field","id":"mac","label":"MAC","input":"text","placeholder":"","prefix":"MAC: "},{"kind":"field","id":"comentarios","label":"COMENTARIOS","input":"text","placeholder":"","prefix":"COMENTARIOS: "},{"kind":"despacho","prefix":"SEGUIMIENTO "},{"kind":"static","text":"*-*"}],"fields":[{"id":"codigo_tecnico_y_nombre_tecn","label":"CODIGO TECNICO Y NOMBRE TECNICO","input":"text","placeholder":""},{"id":"canal_contacto","label":"Canal de contacto","input":"channel"},{"id":"mac","label":"MAC","input":"text","placeholder":""},{"id":"comentarios","label":"COMENTARIOS","input":"text","placeholder":""}]}]};
+</script>
+<script>
+(function(){
+'use strict';
+
+const CATS = [
+  {id:'HFC', label:'HFC', color:'var(--hfc)'},
+  {id:'GPON', label:'GPON', color:'var(--gpon)'},
+  {id:'DTH', label:'DTH', color:'var(--dth)'},
+  {id:'COBRE', label:'COBRE', color:'var(--cobre)'},
+  {id:'CASOS', label:'Casos', color:'var(--casos)'},
+  {id:'GENERALES', label:'Memos generales', color:'var(--gen)'},
+];
+const STEP_LABEL = {ACTIVACION:'Activación', CONFIRMACION:'Confirmación'};
+
+const state = {
+  cat: 'HFC',
+  step: null,
+  suborderIdx: 0,
+  itemIdx: 0,
+  values: {},
+  tvCounts: {},
+  valuesByTemplate: JSON.parse(localStorage.getItem('tipificador_values_by_template') || '{}'),
+  leftCollapsed: false,
+  pastedMemo: localStorage.getItem('tipificador_pasted_memo') || '',
+};
+
+function templateKey(){
+  return state.cat + '|' + (state.step || 'FLAT') + '|' +
+    (getTechList(state.cat) ? state.suborderIdx : state.itemIdx);
+}
+function saveCurrentTemplate(){
+  const key = templateKey();
+  state.valuesByTemplate[key] = state.values;
+  localStorage.setItem('tipificador_values_by_template', JSON.stringify(state.valuesByTemplate));
+  localStorage.setItem('tipificador_r', rInput.value);
+}
+function loadCurrentTemplate(){
+  const key = templateKey();
+  state.values = {...(state.valuesByTemplate[key] || {})};
+  rInput.value = localStorage.getItem('tipificador_r') || '';
+}
+function clearCurrentTemplate(){
+  state.values = {};
+  state.tvCounts = {};
+  state.valuesByTemplate[templateKey()] = {};
+  localStorage.setItem('tipificador_values_by_template', JSON.stringify(state.valuesByTemplate));
+  renderAll();
+}
+
+const rInput = document.getElementById('rInput');
+const legacyR = localStorage.getItem('tipificador_r') || '';
+rInput.value = legacyR;
+localStorage.removeItem('tipificador_r_by_template');
+rInput.addEventListener('input', () => {
+  localStorage.setItem('tipificador_r', rInput.value);
+});
+
+const codigoInput = document.getElementById('codigoInput');
+codigoInput.value = localStorage.getItem('tipificador_codigo') || '';
+codigoInput.addEventListener('input', () => {
+  codigoInput.value = codigoInput.value.replace(/\D/g, '').slice(0, 9);
+  localStorage.setItem('tipificador_codigo', codigoInput.value);
+});
+loadCurrentTemplate();
+
+function esc(s){
+  const d = document.createElement('div');
+  d.textContent = s == null ? '' : s;
+  return d.innerHTML;
+}
+
+function currentColorVar(){
+  const c = CATS.find(c=>c.id===state.cat);
+  return c ? c.color : 'var(--accent)';
+}
+
+function getTechList(catId){
+  return TPL_DATA.TECH[catId] || null;
+}
+
+function currentTechEntry(){
+  const list = getTechList(state.cat);
+  if (!list) return null;
+  const step = state.step || Object.keys(list)[0];
+  const arr = list[step] || [];
+  return arr[state.suborderIdx] || null;
+}
+
+function currentFlatEntry(){
+  const arr = TPL_DATA[state.cat] || [];
+  return arr[state.itemIdx] || null;
+}
+
+// ---------------- rendering ----------------
+
+function renderCatTabs(){
+  const el = document.getElementById('cattabs');
+  el.innerHTML = '';
+  CATS.forEach(c=>{
+    const btn = document.createElement('button');
+    btn.className = 'cattab' + (state.cat===c.id ? ' active' : '');
+    btn.style.borderBottomColor = state.cat===c.id ? c.color : 'transparent';
+    btn.innerHTML = `<span class="dot" style="background:${c.color}"></span>${esc(c.label)}`;
+    btn.onclick = () => {
+      saveCurrentTemplate();
+      state.cat = c.id;
+      state.step = null;
+      state.suborderIdx = 0;
+      state.itemIdx = 0;
+      state.values = {};
+      state.tvCounts = {};
+      state.leftCollapsed = false;
+      loadCurrentTemplate();
+      renderAll();
+    };
+    el.appendChild(btn);
+  });
+}
+
+function normalizeKey(s){
+  return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z0-9]+/g,' ').trim();
+}
+
+function collectFieldAliases(entry, aliases){
+  (entry.fields||[]).forEach(f=>{
+    const names = [f.label, f.id.replace(/_/g,' '), f.prefix||''];
+    names.forEach(n=>{
+      const key=normalizeKey(String(n).replace(/:$/,''));
+      if(key && key.length>1 && !aliases[key]) aliases[key]=f.id;
+    });
+  });
+  (entry.rows||[]).forEach(r=>{
+    if(r.kind==='field' && r.id){
+      const key=normalizeKey(String(r.label||r.id).replace(/:$/,''));
+      if(key && !aliases[key]) aliases[key]=r.id;
+      const pk=normalizeKey(String(r.prefix||'').replace(/:$/,''));
+      if(pk && !aliases[pk]) aliases[pk]=r.id;
+    }
+    if(r.kind==='channel' && r.id){
+      aliases[normalizeKey('ID LLAMADA')]=r.id;
+      aliases[normalizeKey('ID')]=r.id;
+    }
+  });
+}
+
+function allFieldAliases(){
+  const aliases={};
+  const addEntry=e=>collectFieldAliases(e,aliases);
+  Object.values(TPL_DATA.TECH).forEach(cat=>Object.values(cat).forEach(arr=>arr.forEach(addEntry)));
+  (TPL_DATA.CASOS||[]).forEach(addEntry);
+  (TPL_DATA.GENERALES||[]).forEach(addEntry);
+  return aliases;
+}
+
+function renderTransformPanel(parent){
+  const details=document.createElement('details');
+  details.className='transform-panel';
+  const summary=document.createElement('summary');
+  summary.textContent='Transformar un memo existente';
+  details.appendChild(summary);
+  const help=document.createElement('p');
+  help.textContent='Primero selecciona la plantilla destino. Pega aquí el memo anterior y pulsa “Importar datos”: se reconocerán las líneas con formato CAMPO: valor y se rellenarán los campos compatibles sin borrar los demás datos.';
+  details.appendChild(help);
+  const area=document.createElement('textarea');
+  area.placeholder='Pega aquí el memo anterior…';
+  area.value=state.pastedMemo||'';
+  area.addEventListener('input',()=>{state.pastedMemo=area.value;localStorage.setItem('tipificador_pasted_memo',area.value);});
+  details.appendChild(area);
+  const actions=document.createElement('div'); actions.className='actions';
+  const btn=document.createElement('button'); btn.className='btn btn-primary'; btn.textContent='Importar datos al formulario actual';
+  const status=document.createElement('span'); status.style.cssText='font-size:.82rem;color:var(--muted);align-self:center;';
+  btn.onclick=()=>{
+    const raw=area.value.trim();
+    if(!raw){status.textContent='Pega primero un memo.';return;}
+    const entry=getTechList(state.cat)?currentTechEntry():currentFlatEntry();
+    if(!entry){status.textContent='Selecciona primero una plantilla destino.';return;}
+    const aliases=allFieldAliases();
+    const targetFields={};
+    const targetMeta=[];
+    (entry.fields||[]).forEach(f=>{
+      const names=[f.label,f.id.replace(/_/g,' '),f.prefix||''];
+      names.forEach(n=>{const k=normalizeKey(String(n).replace(/:$/,''));if(k)targetFields[k]=f.id;});
+      targetMeta.push({id:f.id,label:normalizeKey(f.label+' '+f.id.replace(/_/g,' '))});
+    });
+    (entry.rows||[]).forEach(r=>{if(r.kind==='field'&&r.id){const names=[r.label,r.id.replace(/_/g,' '),r.prefix||''];names.forEach(n=>{const k=normalizeKey(String(n).replace(/:$/,''));if(k)targetFields[k]=r.id;});targetMeta.push({id:r.id,label:normalizeKey((r.label||'')+' '+r.id.replace(/_/g,' '))});}});
+    // Variantes habituales de los campos que suelen cambiar de nombre entre memos.
+    const aliasGroups=[
+      {keys:['TELEFONO','TELEFONO CLIENTE','TELEFONO DEL CLIENTE','NUMERO DE TELEFONO DEL CLIENTE','NUMERO TELEFONICO CLIENTE','TEL','TEL CLIENTE','TEL DE CLIENTE','TELEFONO DE CONTACTO','NUMERO AL QUE CONFIRMA','REFERENCIA','REF'],test:x=>/(TEL|TELEFONO|NUMERO AL QUE CONFIRMA|REFERENCIA|REF)/.test(x)},
+      {keys:['TEC','CODIGO TECNICO','CODIGO DEL TECNICO','ID TECNICO','ID DEL TECNICO','NOMBRE TECNICO','CODIGO Y NOMBRE TECNICO','CODIGO TECNICO Y NOMBRE TECNICO'],test:x=>/(TEC|TECNICO)/.test(x)},
+      {keys:['COMENTARIO','COMENTARIOS','ALERTA','DATOS COMENTARIO CLIENTE','COMENTARIO CLIENTE','DATOS DEL COMENTARIO DEL CLIENTE'],test:x=>/(COMENTARIO|ALERTA)/.test(x)},
+      {keys:['MOTIVO SUSPENSION','MOTIVO DE SUSPENSION'],test:x=>/MOTIVO DE? SUSPENSION/.test(x)},
+      {keys:['ID CLIENTE','ID','ID LLAMADA','ID PARA PEGAR ID DE LLAMADA'],test:x=>/^ID( CLIENTE| LLAMADA)?$/.test(x)||/ID PARA PEGAR/.test(x)}
+    ];
+    aliasGroups.forEach(g=>{const t=targetMeta.find(x=>g.test(x.label));if(t)g.keys.forEach(k=>{if(!targetFields[k])targetFields[k]=t.id;});});
+    let matched=0;
+    raw.split(/\r?\n/).forEach(line=>{
+      const m=line.match(/^\s*([^:]{2,100})\s*:\s*(.*?)\s*$/);
+      if(!m)return;
+      const key=normalizeKey(m[1]);
+      let id=targetFields[key] || (aliases[key] && (entry.fields||[]).some(f=>f.id===aliases[key]) ? aliases[key] : null);
+      if(!id && /^(TEL|TELEFONO|NUMERO TELEFONICO|REFERENCIA|REF)$/.test(key)) id=targetFields['REFERENCIA']||targetFields['REF']||targetFields['TELEFONO']||targetFields['TEL']||targetFields['TEL DE CLIENTE']||targetFields['TEL. DE CLIENTE']||null;
+      if(!id && /^(TEC|CODIGO|ID|NOMBRE) TECNICO/.test(key)) id=targetFields['TEC']||targetFields['CODIGO TECNICO']||targetFields['ID TECNICO']||targetFields['CODIGO TECNICO Y NOMBRE TECNICO']||targetFields['ID NOMBRE TECNICO']||null;
+      if(!id && /^(COMENTARIO|COMENTARIOS|ALERTA|DATOS COMENTARIO CLIENTE|COMENTARIO CLIENTE)/.test(key)) id=targetFields['COMENTARIO']||targetFields['COMENTARIOS']||targetFields['ALERTA']||null;
+      if(!id && /^MOTIVO( DE)? SUSPENSION/.test(key)) id=targetFields['MOTIVO SUSPENSION']||targetFields['MOTIVO DE SUSPENSION']||targetFields['COMENTARIOS']||null;
+      if(!id && /^(ID CLIENTE|ID PARA PEGAR ID DE LLAMADA)$/.test(key)) id=targetFields['ID']||targetFields['ID CLIENTE']||targetFields['ID LLAMADA']||null;
+      if(id && m[2]){state.values[id]=m[2];matched++;}
+      if(targetFields[normalizeKey('Canal de contacto')]){
+        if(/^ID LLAMADA$/i.test(key)) state.values['canal_contacto__mode']='LLAMADA';
+        if(/^ID$/i.test(key) && /^CHAT$/i.test(m[2])) state.values['canal_contacto__mode']='CHAT';
+      }
+    });
+    state.pastedMemo=raw;
+    localStorage.setItem('tipificador_pasted_memo',raw);
+    saveCurrentTemplate();
+    renderAll();
+    const panel=document.querySelector('.transform-panel'); if(panel)panel.open=true;
+    const newStatus=document.createElement('p'); newStatus.style.cssText='font-size:.82rem;color:var(--accent);font-weight:700;margin:8px 0 0;';
+    newStatus.textContent=matched ? `Se importaron ${matched} campo(s) compatibles. Revisa el formulario y genera el memo.` : 'No se encontraron campos compatibles. Puedes copiar manualmente la información al formulario.';
+    const current=document.querySelector('.transform-panel'); if(current) current.appendChild(newStatus);
+  };
+  actions.appendChild(btn); actions.appendChild(status); details.appendChild(actions);
+  parent.appendChild(details);
+}
+
+
+function renderAll(){
+  renderCatTabs();
+  const wrap = document.getElementById('wrap');
+  wrap.style.setProperty('--catcolor', currentColorVar());
+  wrap.innerHTML = '';
+  renderTransformPanel(wrap);
+  if (getTechList(state.cat)){
+    renderTechLayout(wrap);
+  } else {
+    renderFlatLayout(wrap);
+  }
+}
+
+function renderTechLayout(wrap){
+  const list = getTechList(state.cat);
+  const steps = Object.keys(list);
+  if (!state.step) state.step = steps[0];
+
+  const layout = document.createElement('div');
+  layout.className = 'layout' + (state.leftCollapsed ? ' is-collapsed' : '');
+
+  if (state.leftCollapsed){
+    const showBtn = document.createElement('button');
+    showBtn.className = 'show-list-btn';
+    showBtn.title = 'Mostrar plantillas';
+    showBtn.innerHTML = '☰';
+    showBtn.onclick = () => { state.leftCollapsed = false; renderAll(); };
+    layout.appendChild(showBtn);
+  } else {
+    // left panel
+    const left = document.createElement('div');
+    left.className = 'panel';
+
+    const hideRow = document.createElement('div');
+    hideRow.className = 'hide-list-row';
+    const hideBtn = document.createElement('button');
+    hideBtn.className = 'hide-list-btn';
+    hideBtn.textContent = 'Ocultar lista »';
+    hideBtn.onclick = () => { state.leftCollapsed = true; renderAll(); };
+    hideRow.appendChild(hideBtn);
+    left.appendChild(hideRow);
+
+    const stepsDiv = document.createElement('div');
+    stepsDiv.className = 'steps';
+    steps.forEach(s=>{
+      const b = document.createElement('button');
+      b.className = 'step' + (state.step===s ? ' active' : '');
+      b.textContent = STEP_LABEL[s] || s;
+      b.onclick = () => { saveCurrentTemplate(); state.step = s; state.suborderIdx = 0; state.values={}; state.tvCounts={}; loadCurrentTemplate(); renderAll(); };
+      stepsDiv.appendChild(b);
+    });
+    left.appendChild(stepsDiv);
+
+    const suborders = document.createElement('div');
+    suborders.className = 'suborders';
+    (list[state.step]||[]).forEach((entry, idx)=>{
+      const b = document.createElement('button');
+      b.className = 'suborder-btn' + (state.suborderIdx===idx ? ' active' : '');
+      b.innerHTML = `<span class="lbl">${esc(entry.label)}</span><span class="code">${esc(entry.code||'')}</span>`;
+      b.onclick = () => {
+        saveCurrentTemplate();
+        state.suborderIdx = idx; state.values={}; state.tvCounts={};
+        loadCurrentTemplate();
+        state.leftCollapsed = true; // auto-hide once a template is picked, more room for the form
+        renderAll();
+      };
+      suborders.appendChild(b);
+    });
+    left.appendChild(suborders);
+    layout.appendChild(left);
+  }
+
+  // right panel
+  const right = document.createElement('div');
+  right.className = 'panel';
+  const entry = currentTechEntry();
+  if (entry){
+    renderFormPanel(right, entry);
+  } else {
+    right.innerHTML = '<div class="form-empty">Selecciona una plantilla de la izquierda.</div>';
+  }
+  layout.appendChild(right);
+
+  wrap.appendChild(layout);
+}
+
+function renderFlatLayout(wrap){
+  const items = TPL_DATA[state.cat] || [];
+  const top = document.createElement('div');
+  top.className = 'panel';
+  top.style.marginBottom = '16px';
+  const grid = document.createElement('div');
+  grid.className = 'casos-grid';
+  items.forEach((it, idx)=>{
+    const b = document.createElement('div');
+    b.className = 'caso-card' + (state.itemIdx===idx ? ' active' : '');
+    b.innerHTML = `<div class="lbl">${esc(it.label)}</div>`;
+    b.onclick = () => { saveCurrentTemplate(); state.itemIdx = idx; state.values={}; state.tvCounts={}; loadCurrentTemplate(); renderAll(); };
+    grid.appendChild(b);
+  });
+  top.appendChild(grid);
+  wrap.appendChild(top);
+
+  const formPanel = document.createElement('div');
+  formPanel.className = 'panel';
+  const entry = currentFlatEntry();
+  if (entry){
+    renderFormPanel(formPanel, entry);
+  }
+  wrap.appendChild(formPanel);
+}
+
+function renderFormPanel(container, entry){
+  const codeField = document.getElementById('codigoField');
+  const needsTestCode = entry.rows.some(row => row.kind === 'codigo_hora');
+  if (codeField) codeField.style.display = needsTestCode ? '' : 'none';
+
+  const head = document.createElement('div');
+  head.className = 'formhead';
+  head.innerHTML = `<h2>${esc(entry.label)}</h2>` + (entry.code ? `<span class="code-chip">${esc(entry.code)}</span>` : '');
+  container.appendChild(head);
+
+  const fieldsById = {};
+  (entry.fields||[]).forEach(f=>{ fieldsById[f.id] = f; });
+
+  const formBody = document.createElement('div');
+  let sawDespacho = false;
+  let sawEcho = false;
+  let sawCodigoHora = false;
+
+  entry.rows.forEach(row=>{
+    if (row.kind === 'blank') return;
+
+    if (row.kind === 'static'){
+      const disp = row.text.replace(/^[\*\-_]+|[\*\-_]+$/g,'').trim();
+      if (disp){
+        const h = document.createElement('div');
+        h.className = 'section-hdr';
+        h.textContent = disp;
+        formBody.appendChild(h);
+      }
+      return;
+    }
+
+    if (row.kind === 'despacho'){
+      if (!sawDespacho){
+        sawDespacho = true;
+        const note = document.createElement('div');
+        note.style.cssText = 'font-size:.78rem;color:var(--muted);margin:4px 0 10px;';
+        note.textContent = 'Se completa automáticamente con el campo R de arriba.';
+        formBody.appendChild(note);
+      }
+      return;
+    }
+
+    if (row.kind === 'channel'){
+      formBody.appendChild(renderChannelEl(row.id));
+      return;
+    }
+
+    if (row.kind === 'echo'){
+      if (!sawEcho){
+        sawEcho = true;
+        const note = document.createElement('div');
+        note.style.cssText = 'font-size:.78rem;color:var(--muted);margin:4px 0 10px;';
+        note.textContent = 'Se repite automáticamente con lo capturado en la sección del técnico.';
+        formBody.appendChild(note);
+      }
+      return;
+    }
+
+    if (row.kind === 'codigo_hora'){
+      if (!sawCodigoHora){
+        sawCodigoHora = true;
+        const note = document.createElement('div');
+        note.style.cssText = 'font-size:.78rem;color:var(--muted);margin:4px 0 10px;';
+        note.textContent = 'Se completa automáticamente con el CÓDIGO de arriba + la hora actual.';
+        formBody.appendChild(note);
+      }
+      return;
+    }
+
+    if (row.kind === 'field'){
+      formBody.appendChild(renderFieldEl(row.id, row.label, row.input||'text', row.options, row.placeholder, row.default));
+      return;
+    }
+
+    if (row.kind === 'templated'){
+      row.fieldIds.forEach(fid=>{
+        const meta = fieldsById[fid];
+        if (!meta) return;
+        formBody.appendChild(renderFieldEl(meta.id, meta.label, meta.input||'text', meta.options, meta.placeholder, meta.default));
+      });
+      return;
+    }
+
+    if (row.kind === 'tvgroup'){
+      formBody.appendChild(renderTvGroupEl(row));
+      return;
+    }
+  });
+
+  container.appendChild(formBody);
+
+  // actions
+  const actions = document.createElement('div');
+  actions.className = 'actions';
+  const genBtn = document.createElement('button');
+  genBtn.className = 'btn btn-primary';
+  genBtn.textContent = 'Generar memo';
+  const clearBtn = document.createElement('button');
+  clearBtn.className = 'btn btn-secondary';
+  clearBtn.textContent = 'Limpiar plantilla';
+  clearBtn.onclick = clearCurrentTemplate;
+  const validation = document.createElement('div');
+  validation.className = 'validation';
+
+  const outputWrap = document.createElement('div');
+  outputWrap.className = 'output-wrap';
+  outputWrap.style.display = 'none';
+  const outHead = document.createElement('div');
+  outHead.className = 'output-head';
+  outHead.innerHTML = `<h3>Memo generado</h3>`;
+  const copyBtn = document.createElement('button');
+  copyBtn.className = 'btn btn-secondary';
+  copyBtn.textContent = 'Copiar';
+  const toast = document.createElement('span');
+  toast.className = 'copied-toast';
+  toast.textContent = 'Copiado ✓';
+  const headRight = document.createElement('div');
+  headRight.style.cssText = 'display:flex;align-items:center;gap:10px;';
+  headRight.appendChild(toast);
+  headRight.appendChild(copyBtn);
+  outHead.appendChild(headRight);
+  const outputEl = document.createElement('div');
+  outputEl.className = 'output mono';
+  outputWrap.appendChild(outHead);
+  outputWrap.appendChild(outputEl);
+
+  genBtn.onclick = () => {
+    const R = rInput.value.trim();
+    const needsR = entry.rows.some(row => row.kind === 'despacho');
+    if (needsR && !R){
+      validation.textContent = 'Ingresa el campo R / despacho arriba antes de generar.';
+      rInput.focus();
+      return;
+    }
+    validation.textContent = '';
+    saveCurrentTemplate();
+    const codigo = codigoInput.value.trim();
+    const text = '*-*\n' + generateText(entry.rows, state.values, state.tvCounts, R, codigo);
+    outputEl.textContent = text;
+    outputWrap.style.display = 'block';
+    outputWrap.scrollIntoView({behavior:'smooth', block:'nearest'});
+  };
+
+  copyBtn.onclick = () => {
+    navigator.clipboard.writeText(outputEl.textContent).then(()=>{
+      toast.classList.add('show');
+      setTimeout(()=>toast.classList.remove('show'), 1400);
+    });
+  };
+
+  actions.appendChild(genBtn);
+  actions.appendChild(clearBtn);
+  container.appendChild(actions);
+  container.appendChild(validation);
+  container.appendChild(outputWrap);
+}
+
+function renderFieldEl(id, label, input, options, placeholder, defaultVal){
+  if (input === 'coord_dms'){
+    const suffix = (defaultVal && defaultVal.slice(-1)) || 'N';
+    return renderCoordMaskField(id, label, suffix);
+  }
+  const wrap = document.createElement('div');
+  wrap.className = 'field';
+  const lab = document.createElement('label');
+  lab.setAttribute('for', 'f_'+id);
+  lab.textContent = label;
+  wrap.appendChild(lab);
+
+  if (input === 'select' || input === 'multiselect'){
+    if (input==='select' && defaultVal && state.values[id] === undefined) state.values[id] = defaultVal;
+    if (input==='multiselect' && state.values[id] === undefined) state.values[id] = [];
+    const list = document.createElement('div');
+    list.className = 'opt-list';
+    list.id = 'f_'+id;
+    const isActive = (op) => input==='multiselect'
+      ? (state.values[id]||[]).includes(op)
+      : state.values[id]===op;
+    (options||[]).forEach(op=>{
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'opt-btn' + (isActive(op) ? ' active' : '');
+      b.textContent = op;
+      b.onclick = () => {
+        if (input === 'multiselect'){
+          const arr = state.values[id] || [];
+          const idx = arr.indexOf(op);
+          if (idx >= 0) arr.splice(idx,1); else arr.push(op);
+          state.values[id] = arr;
+          b.classList.toggle('active');
+        } else {
+          state.values[id] = (state.values[id]===op) ? undefined : op; saveCurrentTemplate();
+          [...list.children].forEach(c=>c.classList.remove('active'));
+          if (state.values[id]===op) b.classList.add('active');
+        }
+      };
+      list.appendChild(b);
+    });
+    wrap.appendChild(list);
+    return wrap;
+  }
+
+  let el;
+  if (input === 'textarea'){
+    el = document.createElement('textarea');
+  } else {
+    el = document.createElement('input');
+    el.type = 'text';
+    if (placeholder) el.placeholder = placeholder;
+    if (defaultVal) { el.value = defaultVal; state.values[id] = state.values[id] ?? defaultVal; }
+  }
+  el.id = 'f_'+id;
+  if (state.values[id] !== undefined) el.value = state.values[id];
+  el.addEventListener('input', ()=>{ state.values[id] = el.value; saveCurrentTemplate(); });
+  wrap.appendChild(el);
+  return wrap;
+}
+
+// Masked coordinate input: 00°00'00.00"N — only the 8 digit slots are editable,
+// the ° ' . " and trailing N/O are fixed and the cursor skips over them automatically.
+const COORD_DIGIT_POS = [0,1,3,4,6,7,9,10];
+
+function buildCoordString(digits, suffix){
+  return `${digits[0]}${digits[1]}°${digits[2]}${digits[3]}'${digits[4]}${digits[5]}.${digits[6]}${digits[7]}"${suffix}`;
+}
+
+function nearestDigitSlot(caret){
+  for (let i=0;i<COORD_DIGIT_POS.length;i++){
+    if (COORD_DIGIT_POS[i] >= caret) return i;
+  }
+  return COORD_DIGIT_POS.length - 1;
+}
+
+function renderCoordMaskField(id, label, suffix){
+  const wrap = document.createElement('div');
+  wrap.className = 'field';
+  const lab = document.createElement('label');
+  lab.setAttribute('for', 'f_'+id);
+  lab.textContent = label;
+  wrap.appendChild(lab);
+
+  const el = document.createElement('input');
+  el.type = 'text';
+  el.id = 'f_'+id;
+  el.className = 'mono';
+  el.inputMode = 'numeric';
+
+  let digits = state.values[id+'__digits'] || ['0','0','0','0','0','0','0','0'];
+
+  function commit(){
+    const str = buildCoordString(digits, suffix);
+    el.value = str;
+    state.values[id] = str;
+    state.values[id+'__digits'] = digits;
+  }
+  commit();
+
+  function placeCaret(pos){
+    requestAnimationFrame(()=>el.setSelectionRange(pos,pos));
+  }
+
+  el.addEventListener('keydown', (e)=>{
+    if (e.key === 'Tab' || e.metaKey || e.ctrlKey || e.key === 'ArrowUp' || e.key === 'ArrowDown') return;
+    e.preventDefault();
+    const caret = el.selectionStart;
+    if (e.key >= '0' && e.key <= '9'){
+      const di = nearestDigitSlot(caret);
+      digits[di] = e.key;
+      commit();
+      const nextDi = di + 1;
+      placeCaret(nextDi < COORD_DIGIT_POS.length ? COORD_DIGIT_POS[nextDi] : COORD_DIGIT_POS[di] + 1);
+    } else if (e.key === 'Backspace'){
+      let idx = -1;
+      for (let i=COORD_DIGIT_POS.length-1;i>=0;i--){
+        if (COORD_DIGIT_POS[i] < caret){ idx = i; break; }
+      }
+      if (idx >= 0){
+        digits[idx] = '0';
+        commit();
+        placeCaret(COORD_DIGIT_POS[idx]);
+      }
+    } else if (e.key === 'ArrowLeft'){
+      const di = Math.max(0, nearestDigitSlot(caret) - (COORD_DIGIT_POS[nearestDigitSlot(caret)] >= caret ? 1 : 0));
+      placeCaret(COORD_DIGIT_POS[di]);
+    } else if (e.key === 'ArrowRight'){
+      const di = Math.min(COORD_DIGIT_POS.length-1, nearestDigitSlot(caret) + 1);
+      placeCaret(COORD_DIGIT_POS[di]);
+    }
+  });
+  el.addEventListener('click', ()=>{
+    const caret = el.selectionStart;
+    placeCaret(COORD_DIGIT_POS[nearestDigitSlot(caret)]);
+  });
+  el.addEventListener('focus', ()=>{ placeCaret(COORD_DIGIT_POS[0]); });
+
+  wrap.appendChild(el);
+  return wrap;
+}
+
+function renderChannelEl(id){
+  const wrap = document.createElement('div');
+  wrap.className = 'field';
+  const lab = document.createElement('label');
+  lab.textContent = 'Canal de contacto';
+  wrap.appendChild(lab);
+
+  const modeList = document.createElement('div');
+  modeList.className = 'opt-list';
+  modeList.style.marginBottom = '8px';
+
+  const idWrap = document.createElement('div');
+
+  function renderIdInput(){
+    idWrap.innerHTML = '';
+    const mode = state.values[id+'__mode'];
+    if (mode === 'LLAMADA'){
+      const inp = document.createElement('input');
+      inp.type = 'text';
+      inp.placeholder = 'ID LLAMADA';
+      inp.value = state.values[id] || '';
+      inp.addEventListener('input', ()=>{ state.values[id] = inp.value; });
+      idWrap.appendChild(inp);
+    } else if (mode === 'CHAT'){
+      const note = document.createElement('div');
+      note.style.cssText = 'font-size:.82rem;color:var(--muted);padding:9px 0;';
+      note.textContent = 'Se imprimirá "ID: CHAT" (el chat no tiene número de ID).';
+      idWrap.appendChild(note);
+    }
+  }
+
+  ['LLAMADA','CHAT'].forEach(m=>{
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = m === 'LLAMADA' ? 'Llamada' : 'Chat';
+    b.className = 'opt-btn' + (state.values[id+'__mode']===m ? ' active' : '');
+    b.onclick = () => {
+      state.values[id+'__mode'] = (state.values[id+'__mode']===m) ? undefined : m;
+      [...modeList.children].forEach(c=>c.classList.remove('active'));
+      if (state.values[id+'__mode']===m) b.classList.add('active');
+      renderIdInput();
+    };
+    modeList.appendChild(b);
+  });
+
+  wrap.appendChild(modeList);
+  wrap.appendChild(idWrap);
+  renderIdInput();
+  return wrap;
+}
+
+function renderTvGroupEl(row){
+  const wrap = document.createElement('div');
+  wrap.className = 'tvblock';
+  const head = document.createElement('div');
+  head.className = 'tvhead';
+  head.innerHTML = `<strong>Cantidad de ${esc(row.label)}</strong>`;
+  const picker = document.createElement('div');
+  picker.className = 'countpicker';
+
+  if (state.tvCounts[row.groupId] === undefined) state.tvCounts[row.groupId] = 1;
+
+  const inputsDiv = document.createElement('div');
+  inputsDiv.className = 'tv-inputs';
+
+  function renderInputs(){
+    inputsDiv.innerHTML = '';
+    const n = state.tvCounts[row.groupId];
+    for (let i=0;i<n;i++){
+      const fid = row.groupId+'_'+i;
+      const f = document.createElement('input');
+      f.type = 'text';
+      f.placeholder = `${row.label} ${i+1}`;
+      f.value = state.values[fid] || '';
+      f.addEventListener('input', ()=>{ state.values[fid] = f.value; saveCurrentTemplate(); });
+      inputsDiv.appendChild(f);
+    }
+  }
+
+  for (let n=1; n<=row.max; n++){
+    const b = document.createElement('button');
+    b.textContent = n;
+    b.className = state.tvCounts[row.groupId]===n ? 'active' : '';
+    b.onclick = () => {
+      state.tvCounts[row.groupId] = n;
+      [...picker.children].forEach(c=>c.classList.remove('active'));
+      b.classList.add('active');
+      renderInputs();
+    };
+    picker.appendChild(b);
+  }
+  head.appendChild(picker);
+  wrap.appendChild(head);
+  wrap.appendChild(inputsDiv);
+  renderInputs();
+  return wrap;
+}
+
+// ---------------- memo text generation ----------------
+
+function isEmptyValue(val){
+  if (Array.isArray(val)) return val.length === 0;
+  return val === undefined || val === null || String(val).trim() === '';
+}
+
+function generateText(rows, values, tvCounts, R, codigo){
+  const out = [];
+  for (const r of rows){
+    switch(r.kind){
+      case 'blank': break; // no empty lines in the generated memo
+      case 'static': out.push(r.text); break;
+      case 'despacho': out.push(r.prefix + (R||'')); break;
+      case 'echo': {
+        const val = values[r.refId];
+        if (!isEmptyValue(val)) out.push(r.prefix + val);
+        break;
+      }
+      case 'codigo_hora': {
+        if (!codigo) break;
+        const now = new Date();
+        const hh = String(now.getHours()).padStart(2,'0');
+        const mm = String(now.getMinutes()).padStart(2,'0');
+        out.push(r.prefix + codigo + hh + mm);
+        break;
+      }
+      case 'channel': {
+        const mode = values[r.id+'__mode'];
+        if (mode === 'CHAT'){
+          out.push('ID: CHAT');
+        } else if (mode === 'LLAMADA'){
+          const val = values[r.id];
+          if (!isEmptyValue(val)) out.push('ID LLAMADA: ' + val);
+        }
+        break;
+      }
+      case 'field': {
+        if (r.input === 'coord_dms'){
+          const digits = values[r.id+'__digits'];
+          const touched = digits && digits.some(d => d !== '0');
+          if (!touched) break;
+          out.push((r.prefix||'') + (values[r.id] ?? r.default ?? ''));
+        } else {
+          const val = values[r.id];
+          if (isEmptyValue(val)) break;
+          const printVal = Array.isArray(val) ? val.join(', ') : val;
+          out.push((r.prefix||'') + printVal);
+        }
+        break;
+      }
+      case 'templated': {
+        const allEmpty = r.fieldIds.every(fid => isEmptyValue(values[fid]));
+        if (allEmpty) break;
+        let line = r.raw;
+        for (const fid of r.fieldIds){
+          const v = values[fid];
+          const printVal = Array.isArray(v) ? v.join(', ') : (v ?? '');
+          line = line.split('@@FIELD:'+fid+'@@').join(printVal);
+        }
+        out.push(line);
+        break;
+      }
+      case 'tvgroup': {
+        const n = tvCounts[r.groupId] ?? 1;
+        for (let i=0;i<n;i++){
+          const val = values[r.groupId+'_'+i];
+          if (isEmptyValue(val)) continue;
+          out.push(r.prefix + val);
+        }
+        break;
+      }
+    }
+  }
+  return out.join('\n');
+}
+
+renderAll();
+
+// Fondo de pantalla personalizable; se guarda localmente en este navegador.
+const wallpaperBtn=document.getElementById('wallpaperBtn');
+const wallpaperFile=document.getElementById('wallpaperFile');
+const removeWallpaperBtn=document.getElementById('removeWallpaperBtn');
+function applyWallpaper(data){
+  if(data){document.body.style.backgroundImage=`linear-gradient(rgba(238,241,244,.72),rgba(238,241,244,.72)),url("${data}")`;document.body.classList.add('has-wallpaper');}
+  else{document.body.style.backgroundImage='';document.body.classList.remove('has-wallpaper');}
+}
+try{const saved=localStorage.getItem('tipificadorWallpaper');if(saved)applyWallpaper(saved);}catch(e){}
+wallpaperBtn.addEventListener('click',()=>wallpaperFile.click());
+wallpaperFile.addEventListener('change',()=>{
+  const file=wallpaperFile.files&&wallpaperFile.files[0];if(!file)return;
+  if(!file.type.startsWith('image/')){alert('Elige un archivo de imagen.');return;}
+  const reader=new FileReader();reader.onload=()=>{
+    const img=new Image();img.onload=()=>{
+      try{
+        const max=1800,scale=Math.min(1,max/Math.max(img.width,img.height));
+        const canvas=document.createElement('canvas');canvas.width=Math.round(img.width*scale);canvas.height=Math.round(img.height*scale);
+        canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
+        const data=canvas.toDataURL('image/jpeg',.82);applyWallpaper(data);
+        try{localStorage.setItem('tipificadorWallpaper',data);}catch(e){alert('El fondo se aplicó, pero el navegador no permitió guardarlo para la próxima vez.');}
+      }catch(e){applyWallpaper(reader.result);alert('El fondo se aplicó, pero no se pudo guardar una versión optimizada.');}
+    };img.onerror=()=>alert('No se pudo abrir esa imagen. Prueba con otra.');img.src=reader.result;
+  };reader.readAsDataURL(file);wallpaperFile.value='';
+});
+removeWallpaperBtn.addEventListener('click',()=>{applyWallpaper('');try{localStorage.removeItem('tipificadorWallpaper');}catch(e){};});
+
+window.addEventListener('beforeunload', saveCurrentTemplate);
+})();
+
+
+
+</script>
+</body>
+</html>
